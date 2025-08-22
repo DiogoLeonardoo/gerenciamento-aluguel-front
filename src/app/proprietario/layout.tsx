@@ -48,7 +48,7 @@ export default function ProprietarioLayout({
                 </li>
                 <li>
                   <Link
-                    href="/proprietario/imoveis"
+                    href="/proprietario/casas"
                     className="block py-2 px-4 rounded hover:bg-emerald-700 transition-colors"
                   >
                     Meus Imóveis
