@@ -3,7 +3,7 @@ export type Usuario = {
   nome: string;
   email: string;
   telefone?: string;
-  role: 'ADMIN' | 'PROPRIETARIO' | 'USUARIO';
+  role: 'ADMIN' | 'PROPRIETARIO' | 'USER';
   ativo: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -26,7 +26,29 @@ export type RegisterFormData = {
   password: string;
   confirmPassword: string;
   isProprietario?: boolean;
-  role?: 'ADMIN' | 'PROPRIETARIO' | 'USUARIO';
+  role?: 'ADMIN' | 'PROPRIETARIO' | 'USER';
+};
+
+export type Casa = {
+  id?: number;
+  nome: string;
+  descricao: string;
+  endereco: string;
+  cidade: string;
+  estado: string;
+  cep: string;
+  quartos: number;
+  banheiros: number;
+  maxPessoas: number;
+  valorDiaria: number;
+  fotos?: string[];
+  proprietarioId?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CasaFormData = Omit<Casa, 'id' | 'fotos' | 'proprietarioId' | 'createdAt' | 'updatedAt'> & {
+  fotos?: File[];
 };
 
 export type ProprietarioFormData = {
@@ -42,7 +64,7 @@ export type RegisterRequestData = {
   email: string;
   password: string;
   telefone?: string;
-  role: 'ADMIN' | 'PROPRIETARIO' | 'USUARIO';
+  role: 'ADMIN' | 'PROPRIETARIO' | 'USER';
   cpf?: string;
   endereco?: string;
   cidade?: string;

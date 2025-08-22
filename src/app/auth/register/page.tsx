@@ -15,6 +15,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { authService } from "@/lib/api";
+import { 
+  validateCPF, 
+  validateCEP, 
+  validatePhone,
+  maskCPF,
+  maskCEP,
+  maskPhone,
+  removeMask,
+  validationMessages
+} from "@/lib/validation";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -40,18 +50,40 @@ export default function RegisterPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    
+    if (name === "telefone") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: maskPhone(value),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
   const handleProprietarioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setProprietarioData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    
+    // Apply masks for specific fields
+    if (name === "cpf") {
+      setProprietarioData((prev) => ({
+        ...prev,
+        [name]: maskCPF(value),
+      }));
+    } else if (name === "cep") {
+      setProprietarioData((prev) => ({
+        ...prev,
+        [name]: maskCEP(value),
+      }));
+    } else {
+      setProprietarioData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const validateForm = () => {
@@ -75,20 +107,29 @@ export default function RegisterPage() {
     else if (formData.password !== formData.confirmPassword) 
       newErrors.confirmPassword = "As senhas não coincidem";
 
+    // Validate phone number if provided
+    if (formData.telefone && !validatePhone(formData.telefone)) {
+      newErrors.telefone = validationMessages.phone.invalid;
+    }
+    
     // Additional validation for proprietarios
     if (step === 2 && formData.isProprietario) {
       // CPF is required for proprietarios
-      if (!proprietarioData.cpf) newErrors.cpf = "CPF é obrigatório";
-      else if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/.test(proprietarioData.cpf.replace(/[^\d]/g, ''))) 
-        newErrors.cpf = "CPF inválido";
+      if (!proprietarioData.cpf) {
+        newErrors.cpf = validationMessages.cpf.required;
+      } else if (!validateCPF(proprietarioData.cpf)) {
+        newErrors.cpf = validationMessages.cpf.invalid;
+      }
       
       // Address fields validation
-      if (proprietarioData.cep && !/^\d{5}-\d{3}$|^\d{8}$/.test(proprietarioData.cep.replace(/[^\d]/g, '')))
-        newErrors.cep = "CEP inválido";
+      if (proprietarioData.cep && !validateCEP(proprietarioData.cep)) {
+        newErrors.cep = validationMessages.cep.invalid;
+      }
       
       // State should be 2 characters
-      if (proprietarioData.estado && proprietarioData.estado.length !== 2)
-        newErrors.estado = "Digite a sigla do estado (2 letras)";
+      if (proprietarioData.estado && proprietarioData.estado.length !== 2) {
+        newErrors.estado = validationMessages.estado.minLength;
+      }
     }
 
     setErrors(newErrors);
@@ -113,19 +154,19 @@ export default function RegisterPage() {
       const userData = {
         nome: formData.nome,
         email: formData.email,
-        telefone: formData.telefone || undefined,
+        telefone: formData.telefone ? removeMask(formData.telefone) : undefined,
         password: formData.password,
-        role: formData.isProprietario ? "PROPRIETARIO" : "USUARIO",
+        role: formData.isProprietario ? "PROPRIETARIO" : "USER",
       };
 
       // Add proprietario specific fields if the user is a proprietario
       if (formData.isProprietario) {
         Object.assign(userData, {
-          cpf: proprietarioData.cpf,
+          cpf: removeMask(proprietarioData.cpf),
           endereco: proprietarioData.endereco || undefined,
           cidade: proprietarioData.cidade || undefined,
           estado: proprietarioData.estado || undefined,
-          cep: proprietarioData.cep || undefined,
+          cep: proprietarioData.cep ? removeMask(proprietarioData.cep) : undefined,
         });
       }
 
