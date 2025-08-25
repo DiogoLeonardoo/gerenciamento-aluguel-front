@@ -3,6 +3,7 @@ import Link from "next/link";
 import AuthCheck from "@/components/auth-check";
 import RoleGuard from "@/components/role-guard";
 import LogoutButton from "@/components/logout-button";
+import { Toaster } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "Proprietário Dashboard - Sistema de Gerenciamento de Aluguéis",
@@ -17,6 +18,7 @@ export default function ProprietarioLayout({
   return (
     <AuthCheck>
       <RoleGuard allowedRoles={['PROPRIETARIO']}>
+        <Toaster />
         <div className="min-h-screen flex">
           {/* Proprietário Sidebar */}
           <div className="w-64 bg-emerald-600 text-white p-4 hidden md:block">
@@ -34,7 +36,11 @@ export default function ProprietarioLayout({
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
-              InHouse Proprietário
+              <Link href="/proprietario/dashboard">
+                <span className="white">
+                  InHouse
+                </span>
+              </Link>
             </div>
             <nav>
               <ul className="space-y-2">
@@ -60,6 +66,14 @@ export default function ProprietarioLayout({
                     className="block py-2 px-4 rounded hover:bg-emerald-700 transition-colors"
                   >
                     Aluguéis
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/proprietario/hospedes"
+                    className="block py-2 px-4 rounded hover:bg-emerald-700 transition-colors"
+                  >
+                    Hóspedes
                   </Link>
                 </li>
                 <li>
