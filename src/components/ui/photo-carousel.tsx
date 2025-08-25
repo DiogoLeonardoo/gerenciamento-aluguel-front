@@ -4,17 +4,26 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { Button } from "./button";
 import { casasService } from "@/lib/api";
+import { FotoCasa } from "@/lib/types";
 
 interface PhotoCarouselProps {
-  photos: string[];
+  photos: string[] | FotoCasa[];
   casaId: number;
-  onUpload?: (newPhotos: string[]) => void;
+  onUpload?: (newPhotos: FotoCasa[]) => void;
   className?: string;
 }
 
 export function PhotoCarousel({ photos = [], casaId, onUpload, className = "" }: PhotoCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Function to get the image URL from a photo
+  const getPhotoUrl = (photo: string | FotoCasa): string => {
+    if (typeof photo === "string") {
+      return photo;
+    }
+    return photo.dataUrl || '';
+  };
 
   const goToNext = () => {
     if (photos.length > 0) {
@@ -46,11 +55,11 @@ export function PhotoCarousel({ photos = [], casaId, onUpload, className = "" }:
       await casasService.uploadFotosCasa(casaId, fileArray);
       
       // Reload photos using the new endpoint
-      const updatedPhotos = await casasService.getPhotoListByCasaId(casaId);
+      const updatedResponse = await casasService.getPhotoListByCasaId(casaId);
       
       // Call the onUpload callback if provided
       if (onUpload) {
-        onUpload(updatedPhotos);
+        onUpload(updatedResponse);
       }
       
     } catch (error) {
@@ -89,9 +98,13 @@ export function PhotoCarousel({ photos = [], casaId, onUpload, className = "" }:
   return (
     <div className={`relative h-48 ${className}`}>
       <img 
-        src={photos[currentIndex]} 
+        src={photos[currentIndex] ? getPhotoUrl(photos[currentIndex]) : '/no-image.svg'}
         alt={`Foto ${currentIndex + 1}`}
         className="w-full h-full object-cover"
+        onError={(e) => {
+          // Fallback para imagem padrão em caso de erro
+          e.currentTarget.src = '/no-image.svg';
+        }}
       />
       
       {/* Navigation buttons */}
