@@ -57,7 +57,7 @@ export default function AdminDashboardLayout({
                 <li>
                   <Link
                     href="/admin/dashboard/proprietarios"
-                    className="block py-2 px-4 rounded hover:bg-purple-800 transition-colors"
+                    className="block py-2 px-4 rounded hover:bg-gray-800 transition-colors"
                   >
                     Proprietários
                   </Link>
@@ -65,7 +65,7 @@ export default function AdminDashboardLayout({
                 <li>
                   <Link
                     href="/admin/dashboard/imoveis"
-                    className="block py-2 px-4 rounded hover:bg-purple-800 transition-colors"
+                    className="block py-2 px-4 rounded hover:bg-gray-800 transition-colors"
                   >
                     Imóveis
                   </Link>
@@ -73,7 +73,7 @@ export default function AdminDashboardLayout({
                 <li>
                   <Link
                     href="/admin/dashboard/relatorios"
-                    className="block py-2 px-4 rounded hover:bg-purple-800 transition-colors"
+                    className="block py-2 px-4 rounded hover:bg-gray-800 transition-colors"
                   >
                     Relatórios
                   </Link>

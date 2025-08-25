@@ -19,7 +19,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-white shadow">
+      <header className="bg-white shadow border-b border-slate-200">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center">
             <svg
@@ -35,7 +35,11 @@ export default function HomePage() {
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
               <polyline points="9 22 9 12 15 12 15 22" />
             </svg>
-            <span className="text-xl font-bold text-slate-700">InHouse</span>
+            <Link href="/">
+              <span className="text-xl font-bold text-slate-700 cursor-pointer">
+                InHouse
+              </span>
+            </Link>
           </div>
           <div className="space-x-4">
             <Link
