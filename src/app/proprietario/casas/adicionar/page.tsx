@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Casa, CasaFormData } from "@/lib/types";
-import { casasService, authService } from "@/lib/api";
+import { Casa, CasaFormData, InventarioItem } from "@/lib/types";
+import { casasService, authService, inventarioService } from "@/lib/api";
 import { maskCEP, removeMask } from "@/lib/validation";
+import { buscarEndereco } from "@/lib/cep-busca";
+import { InventarioSection } from "@/components/ui/inventario-section";
 import { X } from "lucide-react";
 
 export default function AdicionarCasaPage() {
@@ -22,9 +24,12 @@ export default function AdicionarCasaPage() {
     banheiros: 1,
     maxPessoas: 1,
     valorDiaria: 0,
+    ativa: true,
   });
+
   const [fotos, setFotos] = useState<File[]>([]);
   const [fotosPreview, setFotosPreview] = useState<string[]>([]);
+  const [inventario, setInventario] = useState<InventarioItem[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,10 +60,16 @@ export default function AdicionarCasaPage() {
     const { name, value } = e.target;
     
     if (name === "cep") {
+      const formattedCep = maskCEP(value);
       setFormData(prev => ({
         ...prev,
-        [name]: maskCEP(value),
+        [name]: formattedCep,
       }));
+      
+      // If CEP is complete (8 digits + formatting), search for address
+      if (formattedCep.length === 9) {
+        handleCepSearch(formattedCep);
+      }
     } else if (["quartos", "banheiros", "maxPessoas"].includes(name)) {
       setFormData(prev => ({
         ...prev,
@@ -76,31 +87,33 @@ export default function AdicionarCasaPage() {
       }));
     }
   };
+  
+  const handleCepSearch = async (cep: string) => {
+    if (cep.length !== 9) return;
+    
+    try {
+      setIsLoading(true);
+      const endereco = await buscarEndereco(cep);
+      
+      if (endereco) {
+        setFormData(prev => ({
+          ...prev,
+          endereco: endereco.logradouro,
+          cidade: endereco.localidade,
+          estado: endereco.uf,
+        }));
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFotosChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
-    // Validate file types and size
-    const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-    const maxSizeInBytes = 5 * 1024 * 1024; // 5MB
-    
-    const newFotos = Array.from(e.target.files).filter(file => {
-      // Check file type
-      if (!validImageTypes.includes(file.type)) {
-        alert(`Formato inválido: ${file.name}. Apenas PNG, JPG ou JPEG são permitidos.`);
-        return false;
-      }
-      
-      // Check file size
-      if (file.size > maxSizeInBytes) {
-        alert(`Arquivo muito grande: ${file.name}. O tamanho máximo é 5MB.`);
-        return false;
-      }
-      
-      return true;
-    });
-    
-    if (newFotos.length === 0) return;
+    const newFotos = Array.from(e.target.files);
     
     // Check if adding these new photos would exceed the 10 photo limit
     if (fotos.length + newFotos.length > 10) {
@@ -120,16 +133,6 @@ export default function AdicionarCasaPage() {
     
     setFotos(prev => [...prev, ...newFotos]);
     setFotosPreview(prev => [...prev, ...newPreviewUrls]);
-    
-    // Clear any previous errors related to photos
-    if (errors.fotos) {
-      setErrors(prev => {
-        const newErrors = {...prev};
-        delete newErrors.fotos;
-        return newErrors;
-      });
-      setError(null);
-    }
   };
 
   const removeFoto = (index: number) => {
@@ -206,10 +209,31 @@ export default function AdicionarCasaPage() {
       
       // Add photos if there are any
       fotos.forEach(foto => {
-        formDataObj.append("fotos", foto);
+        formDataObj.append("files", foto); // Changed from "fotos" to "files" to match the backend API
       });
       
-      await casasService.criarCasa(formDataObj);
+      // Create the casa first
+      const casaCriada = await casasService.criarCasa(formDataObj);
+      
+      // If inventory items exist, add them to the casa
+      if (inventario.length > 0 && casaCriada && casaCriada.id) {
+        try {
+          await inventarioService.adicionarMultiplosItensInventario(
+            casaCriada.id, 
+            inventario.map(item => ({
+              item: item.item,
+              descricao: item.descricao || "",
+              quantidade: item.quantidade,
+              condicao: item.condicao,
+              valorEstimado: item.valorEstimado,
+              observacoes: item.observacoes || "",
+            }))
+          );
+        } catch (inventarioErr) {
+          console.error("Erro ao adicionar itens ao inventário:", inventarioErr);
+          // Continue with navigation even if inventory fails
+        }
+      }
       
       // Navigate back to casa listing after success
       router.push("/proprietario/casas");
@@ -253,35 +277,33 @@ export default function AdicionarCasaPage() {
               )}
             
             <div className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label htmlFor="nome" className="block text-sm font-medium mb-1">
-                    Nome do imóvel *
-                  </label>
-                  <Input
-                    id="nome"
-                    name="nome"
-                    value={formData.nome}
-                    onChange={handleChange}
-                    placeholder="Ex: Casa na Praia, Apartamento no Centro"
-                  />
-                  {errors.nome && <p className="text-sm text-red-500 mt-1">{errors.nome}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="cep" className="block text-sm font-medium mb-1">
-                    CEP *
-                  </label>
-                  <Input
-                    id="cep"
-                    name="cep"
-                    value={formData.cep}
-                    onChange={handleChange}
-                    placeholder="00000-000"
-                    maxLength={9}
-                  />
-                  {errors.cep && <p className="text-sm text-red-500 mt-1">{errors.cep}</p>}
-                </div>
+              <div>
+                <label htmlFor="nome" className="block text-sm font-medium mb-1">
+                  Nome do imóvel *
+                </label>
+                <Input
+                  id="nome"
+                  name="nome"
+                  value={formData.nome}
+                  onChange={handleChange}
+                  placeholder="Ex: Casa na Praia, Apartamento no Centro"
+                />
+                {errors.nome && <p className="text-sm text-red-500 mt-1">{errors.nome}</p>}
+              </div>
+              
+              <div>
+                <label htmlFor="cep" className="block text-sm font-medium mb-1">
+                  CEP *
+                </label>
+                <Input
+                  id="cep"
+                  name="cep"
+                  value={formData.cep}
+                  onChange={handleChange}
+                  placeholder="00000-000"
+                  maxLength={9}
+                />
+                {errors.cep && <p className="text-sm text-red-500 mt-1">{errors.cep}</p>}
               </div>
               
               <div>
@@ -324,6 +346,7 @@ export default function AdicionarCasaPage() {
                     placeholder="SP"
                     maxLength={2}
                     className="uppercase"
+                    disabled
                   />
                   {errors.estado && <p className="text-sm text-red-500 mt-1">{errors.estado}</p>}
                 </div>
@@ -499,15 +522,21 @@ export default function AdicionarCasaPage() {
                 
                 {errors.fotos && <p className="text-sm text-red-500 mt-1">{errors.fotos}</p>}
               </div>
+              
+              {/* Seção de Inventário */}
+              <InventarioSection 
+                inventario={inventario} 
+                onChange={setInventario} 
+              />
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-end mt-6">
               <Button
                 type="submit"
                 className="bg-green-600 hover:bg-green-700"
                 disabled={isLoading}
               >
-                {isLoading ? "Cadastrando..." : "Cadastrar Imóvel"}
+                <p style={{color:'white'}}>{isLoading ? "Cadastrando..." : "Cadastrar Imóvel"}</p>
               </Button>
             </div>
           </form>

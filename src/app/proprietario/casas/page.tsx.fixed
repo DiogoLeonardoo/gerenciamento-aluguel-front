@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,19 +13,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { toast } from "@/components/ui/toast";
 
 export default function CasasListPage() {
-  const [casas, setCasas] = useState<Casa[]>([]); // fonte de verdade
-  const [casasFiltradas, setCasasFiltradas] = useState<Casa[]>([]); // derivado de casas + filtro
+  const [casas, setCasas] = useState<Casa[]>([]);
+  const [casasFiltradas, setCasasFiltradas] = useState<Casa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authorized, setAuthorized] = useState(false);
   const [filtro, setFiltro] = useState<"todos" | "ativos" | "inativos">("todos");
   const [casaParaAlterar, setCasaParaAlterar] = useState<Casa | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [isTogglingId, setIsTogglingId] = useState<number | null>(null);
+  const [authDiagnostics, setAuthDiagnostics] = useState({ hasToken: false, userRole: null, isAuth: false });
   const router = useRouter();
 
   // Função para buscar casas - extraída para fora do useEffect
-  const fetchCasas = useCallback(async () => {
+  const fetchCasas = async () => {
     setIsLoading(true);
     try {
       // Get basic casa data
@@ -37,10 +37,8 @@ export default function CasasListPage() {
       // Fetch photos for each casa
       for (let i = 0; i < casasComFotos.length; i++) {
         try {
-          // Use the endpoint to get all photos for the house
+          // Use the new endpoint to get the photo list
           const fotoResponse = await casasService.getPhotoListByCasaId(casasComFotos[i].id!);
-          
-          console.log(`Loaded ${fotoResponse?.fotos?.length || 0} photos for house ${casasComFotos[i].id}`);
           
           // A resposta já inclui fotoPrincipalData, totalFotos, fotoPrincipalId e fotos
           if (fotoResponse) {
@@ -71,51 +69,75 @@ export default function CasasListPage() {
       });
       
       setCasas(casasOrdenadas);
+      setCasasFiltradas(casasOrdenadas);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Erro ao carregar imóveis");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  };
 
-  // Efeito só para autenticação
   useEffect(() => {
+    // Check if user is authenticated and has proprietário role
     try {
+      // Verificar autenticação
       const isAuth = authService.isAuthenticated();
+      const token = localStorage.getItem("token");
       const userRole = authService.getUserRole();
+      
+      // Atualizar diagnósticos
+      setAuthDiagnostics({
+        hasToken: !!token,
+        userRole: userRole,
+        isAuth: isAuth
+      });
+      
+      console.log("Diagnóstico de autenticação:", {
+        isAuth,
+        hasToken: !!token,
+        userRole,
+        tokenValue: token ? `${token.substring(0, 10)}...` : 'nenhum'
+      });
+      
       if (!isAuth) {
+        console.log("Usuário não autenticado, redirecionando para login");
         toast.error("Sessão expirada", "Por favor, faça login novamente.");
         router.push('/auth/login');
         return;
       }
+      
+      // Verificar papel do usuário
       if (userRole !== 'PROPRIETARIO') {
         setError('Acesso negado. Somente proprietários podem acessar esta página.');
         toast.error("Acesso negado", "Somente proprietários podem acessar esta página.");
-        setTimeout(() => router.push('/'), 1500);
+        setTimeout(() => {
+          router.push('/');
+        }, 2000);
         return;
       }
+      
       setAuthorized(true);
     } catch (err) {
       console.error("Erro ao verificar autenticação:", err);
       toast.error("Erro de autenticação", "Ocorreu um problema ao verificar suas credenciais.");
       router.push('/auth/login');
     }
-  }, [router]);
 
-  // Efeito para carregar casas quando autorizado
-  useEffect(() => {
     if (authorized) {
       fetchCasas();
     }
-  }, [authorized, fetchCasas]);
+  }, [router, authorized]);
   
-  // Derivar lista filtrada sempre que casas ou filtro mudarem
+  // Efeito para aplicar o filtro
   useEffect(() => {
-    let filtradas = casas;
-    if (filtro === 'ativos') filtradas = casas.filter(c => c.ativa);
-    if (filtro === 'inativos') filtradas = casas.filter(c => !c.ativa);
-    setCasasFiltradas(filtradas);
-  }, [casas, filtro]);
+    if (filtro === "todos") {
+      setCasasFiltradas(casas);
+    } else if (filtro === "ativos") {
+      setCasasFiltradas(casas.filter(casa => casa.ativa));
+    } else {
+      setCasasFiltradas(casas.filter(casa => !casa.ativa));
+    }
+  }, [filtro, casas]);
 
   // Preparar para alternar o status, abre o modal de confirmação
   const prepararToggleStatus = (casa: Casa) => {
@@ -130,7 +152,6 @@ export default function CasasListPage() {
     const action = casaParaAlterar.ativa ? 'desativar' : 'ativar';
     try {
       setConfirmDialogOpen(false);
-      setIsTogglingId(casaParaAlterar.id!);
       
       // Verificar se o usuário está autenticado
       if (!authService.isAuthenticated()) {
@@ -142,37 +163,52 @@ export default function CasasListPage() {
       // Log para debug
       console.log(`Tentando ${action} o imóvel ID: ${casaParaAlterar.id}`);
       
-      // Salvar o ID da casa antes da chamada de API
-      const casaId = casaParaAlterar.id!;
-      const novoStatus = !casaParaAlterar.ativa;
-      
       // Chame a API para alternar o status
-      await casasService.alternarStatusCasa(casaId, casaParaAlterar.ativa);
+      await casasService.alternarStatusCasa(casaParaAlterar.id!, casaParaAlterar.ativa);
       
-      // Otimismo: atualizar estado imediatamente; fetch posterior garante consistência
-      setCasas(prev => {
-        const atualizadas = prev.map(c => c.id === casaId ? { ...c, ativa: novoStatus } : c);
-        // reordenar mantendo regra
-        return [...atualizadas].sort((a, b) => {
+      // Função para ordenar casas (igual à usada no carregamento inicial)
+      const ordenarCasas = (casasParaOrdenar: Casa[]) => {
+        return [...casasParaOrdenar].sort((a, b) => {
+          // Primeiro por status (ativas primeiro)
           if (a.ativa && !b.ativa) return -1;
           if (!a.ativa && b.ativa) return 1;
+          // Depois por data de criação (mais recentes primeiro)
           return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         });
-      });
+      };
+      
+      // Criar uma versão atualizada da casa com o status alternado
+      const casaAtualizada = { ...casaParaAlterar, ativa: !casaParaAlterar.ativa };
+      
+      // Atualizar toda a lista de casas
+      const casasAtualizadas = casas.map(c => 
+        c.id === casaParaAlterar.id ? casaAtualizada : c
+      );
+      
+      // Ordenar a lista atualizada
+      const casasOrdenadas = ordenarCasas(casasAtualizadas);
+      
+      // Atualizar o estado principal
+      setCasas(casasOrdenadas);
+      
+      // Aplicar o filtro atual à lista atualizada
+      if (filtro === "todos") {
+        setCasasFiltradas(casasOrdenadas);
+      } else if (filtro === "ativos") {
+        setCasasFiltradas(casasOrdenadas.filter(c => c.ativa));
+      } else {
+        setCasasFiltradas(casasOrdenadas.filter(c => !c.ativa));
+      }
       
       // Mostrar mensagem de sucesso usando toast
       toast.success(
-        `Imóvel ${novoStatus ? 'ativado' : 'desativado'} com sucesso!`
+        `Imóvel ${action === 'ativar' ? 'ativado' : 'desativado'} com sucesso!`
       );
       
       // Limpar a casa selecionada
       setCasaParaAlterar(null);
-      setIsTogglingId(null);
-      // Recarregar silenciosamente do servidor para garantir sync (não bloqueante)
-      fetchCasas();
     } catch (err: any) {
       console.error("Erro ao alterar status:", err);
-      setIsTogglingId(null);
       
       // Verificar se é um erro de autenticação
       if (err.response?.status === 403 || err.response?.status === 401) {
@@ -196,7 +232,9 @@ export default function CasasListPage() {
         // Em caso de erro, recarregar dados para garantir consistência
         if (authorized) {
           toast.info("Recarregando dados...");
-          fetchCasas();
+          setTimeout(() => {
+            fetchCasas();
+          }, 1000);
         }
       }
     }
@@ -211,26 +249,19 @@ export default function CasasListPage() {
           const fotoPrincipal = newPhotos && newPhotos.fotos ? 
             newPhotos.fotos.find((foto: any) => foto.principal) : null;
           
-          console.log(`Updating house ${casaId} with ${newPhotos.fotos?.length || 0} photos`);
-          
           return { 
             ...casa, 
             fotos: newPhotos.fotos || [],
-            fotoPrincipalData: fotoPrincipal ? fotoPrincipal.dataUrl : (newPhotos.fotoPrincipalData || ''),
-            fotoPrincipalId: fotoPrincipal ? fotoPrincipal.id : (newPhotos.fotoPrincipalId || null),
-            totalFotos: newPhotos.totalFotos || (newPhotos.fotos?.length || 0)
+            fotoPrincipalData: newPhotos.fotoPrincipalData || '',
+            fotoPrincipalId: newPhotos.fotoPrincipalId || null,
+            totalFotos: newPhotos.totalFotos || 0
           };
         }
         return casa;
       });
     
     // Atualizar ambos os estados
-    setCasas(updateCasaPhotos); // efeito derivado cuidará de casasFiltradas
-    
-    // Se necessário, também podemos forçar um refresh para garantir que temos os dados mais recentes
-    if (newPhotos && newPhotos.fotos && newPhotos.fotos.length > 0) {
-      toast.success("Fotos atualizadas", "As fotos foram atualizadas com sucesso!");
-    }
+    setCasas(updateCasaPhotos);
   };
 
   return (
@@ -261,12 +292,24 @@ export default function CasasListPage() {
         </DialogContent>
       </Dialog>
       
+      {/* Diagnóstico de autenticação - visível apenas em desenvolvimento */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div className="mb-4 p-4 border border-yellow-300 bg-yellow-50 rounded-md">
+          <h3 className="text-sm font-semibold mb-1">Diagnóstico de Autenticação (Ambiente de Desenvolvimento)</h3>
+          <div className="text-xs space-y-1">
+            <p>Token: {authDiagnostics.hasToken ? '✅ Presente' : '❌ Ausente'}</p>
+            <p>Papel: {authDiagnostics.userRole ? `✅ ${authDiagnostics.userRole}` : '❌ Não definido'}</p>
+            <p>Autenticado: {authDiagnostics.isAuth ? '✅ Sim' : '❌ Não'}</p>
+          </div>
+        </div>
+      )}
+      
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Meus Imóveis</h1>
         {authorized && (
           <Link href="/proprietario/casas/adicionar">
             <Button className="bg-green-600 hover:bg-green-700">
-              <p style={{color: 'white'}}>Adicionar Imóvel</p>
+              Adicionar Imóvel
             </Button>
           </Link>
         )}
@@ -341,17 +384,15 @@ export default function CasasListPage() {
             >
               <div className="relative">
                 <PhotoCarousel 
-                  photos={casa.fotos && casa.fotos.length > 0 ? casa.fotos : (
-                    casa.fotoPrincipalData ? [{
-                      id: casa.fotoPrincipalId || 0,
-                      dataUrl: casa.fotoPrincipalData,
-                      nomeArquivo: '',
-                      descricao: null,
-                      principal: true,
-                      contentType: '',
-                      tamanho: 0
-                    }] : []
-                  )} 
+                  photos={casa.fotoPrincipalData ? [{
+                    id: casa.fotoPrincipalId || 0,
+                    dataUrl: casa.fotoPrincipalData,
+                    nomeArquivo: '',
+                    descricao: null,
+                    principal: true,
+                    contentType: '',
+                    tamanho: 0
+                  }] : (casa.fotos || [])} 
                   casaId={casa.id!} 
                   onUpload={(newPhotos) => handlePhotoUpload(casa.id!, newPhotos)} 
                 />
@@ -391,24 +432,23 @@ export default function CasasListPage() {
                   </div>
                   <div className="flex gap-2">
                     <Link href={`/proprietario/casas/${casa.id}`}>
-                      <Button variant="outline" size="sm">Editar</Button>
+                      <Button variant="outline" size="sm">Detalhes</Button>
                     </Link>
                     <Button 
                       variant={casa.ativa ? "destructive" : "secondary"} 
                       size="sm"
                       onClick={() => prepararToggleStatus(casa)}
                       className="flex items-center gap-1"
-                      disabled={isTogglingId === casa.id}
                     >
                       {casa.ativa ? (
                         <>
                           <PowerOff size={14} />
-                          <span>{isTogglingId === casa.id ? 'Alterando...' : 'Desativar'}</span>
+                          <span>Desativar</span>
                         </>
                       ) : (
                         <>
                           <Power size={14} />
-                          <span>{isTogglingId === casa.id ? 'Alterando...' : 'Ativar'}</span>
+                          <span>Ativar</span>
                         </>
                       )}
                     </Button>
