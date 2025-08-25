@@ -16,7 +16,7 @@ export default function DashboardLayout({
 }) {
   return (
     <AuthCheck>
-      <RoleGuard allowedRoles={['USUARIO', 'ADMIN', 'PROPRIETARIO']}>
+      <RoleGuard allowedRoles={['USER', 'ADMIN', 'PROPRIETARIO']}>
         <div className="min-h-screen flex">
         {/* Sidebar */}
         <div className="w-64 bg-gradient-to-r from-emerald-600 to-green-500">

@@ -15,6 +15,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { authService } from "@/lib/api";
+import {
+  validateCPF,
+  validateCEP,
+  validatePhone,
+  maskCPF,
+  maskCEP,
+  maskPhone,
+  removeMask,
+  validationMessages
+} from "@/lib/validation";
+import { buscarEndereco } from "@/lib/cep-busca";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -40,18 +51,68 @@ export default function RegisterPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+
+    if (name === "telefone") {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: maskPhone(value),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
   };
 
   const handleProprietarioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setProprietarioData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Apply masks for specific fields
+    if (name === "cpf") {
+      setProprietarioData((prev) => ({
+        ...prev,
+        [name]: maskCPF(value),
+      }));
+    } else if (name === "cep") {
+      const formattedCep = maskCEP(value);
+      setProprietarioData((prev) => ({
+        ...prev,
+        [name]: formattedCep,
+      }));
+      
+      // If CEP is complete (8 digits + formatting), search for address
+      if (formattedCep.length === 9) {
+        handleCepSearch(formattedCep);
+      }
+    } else {
+      setProprietarioData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+  
+  const handleCepSearch = async (cep: string) => {
+    if (cep.length !== 9) return;
+    
+    try {
+      setIsLoading(true);
+      const endereco = await buscarEndereco(cep);
+      
+      if (endereco) {
+        setProprietarioData(prev => ({
+          ...prev,
+          endereco: endereco.logradouro,
+          cidade: endereco.localidade,
+          estado: endereco.uf,
+        }));
+      }
+    } catch (error) {
+      console.error("Erro ao buscar CEP:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const validateForm = () => {
@@ -59,36 +120,45 @@ export default function RegisterPage() {
 
     // Basic validation for all users
     if (!formData.nome) newErrors.nome = "Nome é obrigatório";
-    
+
     if (!formData.email) newErrors.email = "E-mail é obrigatório";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) 
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "E-mail inválido";
-    
+
     if (!formData.password) newErrors.password = "Senha é obrigatória";
-    else if (formData.password.length < 8) 
+    else if (formData.password.length < 8)
       newErrors.password = "A senha deve ter no mínimo 8 caracteres";
     else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(formData.password))
       newErrors.password = "A senha deve conter letras maiúsculas, minúsculas, números e caracteres especiais";
-    
-    if (!formData.confirmPassword) 
+
+    if (!formData.confirmPassword)
       newErrors.confirmPassword = "Confirme sua senha";
-    else if (formData.password !== formData.confirmPassword) 
+    else if (formData.password !== formData.confirmPassword)
       newErrors.confirmPassword = "As senhas não coincidem";
+
+    // Validate phone number if provided
+    if (formData.telefone && !validatePhone(formData.telefone)) {
+      newErrors.telefone = validationMessages.phone.invalid;
+    }
 
     // Additional validation for proprietarios
     if (step === 2 && formData.isProprietario) {
       // CPF is required for proprietarios
-      if (!proprietarioData.cpf) newErrors.cpf = "CPF é obrigatório";
-      else if (!/^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/.test(proprietarioData.cpf.replace(/[^\d]/g, ''))) 
-        newErrors.cpf = "CPF inválido";
-      
+      if (!proprietarioData.cpf) {
+        newErrors.cpf = validationMessages.cpf.required;
+      } else if (!validateCPF(proprietarioData.cpf)) {
+        newErrors.cpf = validationMessages.cpf.invalid;
+      }
+
       // Address fields validation
-      if (proprietarioData.cep && !/^\d{5}-\d{3}$|^\d{8}$/.test(proprietarioData.cep.replace(/[^\d]/g, '')))
-        newErrors.cep = "CEP inválido";
-      
+      if (proprietarioData.cep && !validateCEP(proprietarioData.cep)) {
+        newErrors.cep = validationMessages.cep.invalid;
+      }
+
       // State should be 2 characters
-      if (proprietarioData.estado && proprietarioData.estado.length !== 2)
-        newErrors.estado = "Digite a sigla do estado (2 letras)";
+      if (proprietarioData.estado && proprietarioData.estado.length !== 2) {
+        newErrors.estado = validationMessages.estado.minLength;
+      }
     }
 
     setErrors(newErrors);
@@ -97,7 +167,7 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     if (formData.isProprietario && step === 1) {
@@ -113,19 +183,19 @@ export default function RegisterPage() {
       const userData = {
         nome: formData.nome,
         email: formData.email,
-        telefone: formData.telefone || undefined,
+        telefone: formData.telefone ? removeMask(formData.telefone) : undefined,
         password: formData.password,
-        role: formData.isProprietario ? "PROPRIETARIO" : "USUARIO",
+        role: formData.isProprietario ? "PROPRIETARIO" : "USER",
       };
 
       // Add proprietario specific fields if the user is a proprietario
       if (formData.isProprietario) {
         Object.assign(userData, {
-          cpf: proprietarioData.cpf,
+          cpf: removeMask(proprietarioData.cpf),
           endereco: proprietarioData.endereco || undefined,
           cidade: proprietarioData.cidade || undefined,
           estado: proprietarioData.estado || undefined,
-          cep: proprietarioData.cep || undefined,
+          cep: proprietarioData.cep ? removeMask(proprietarioData.cep) : undefined,
         });
       }
 
@@ -265,10 +335,10 @@ export default function RegisterPage() {
                 <label htmlFor="cpf" className="text-sm font-medium">
                   CPF
                 </label>
-                <Input 
-                  id="cpf" 
+                <Input
+                  id="cpf"
                   name="cpf"
-                  placeholder="000.000.000-00" 
+                  placeholder="000.000.000-00"
                   value={proprietarioData.cpf}
                   onChange={handleProprietarioChange}
                 />
@@ -278,13 +348,29 @@ export default function RegisterPage() {
               </div>
 
               <div className="space-y-2">
+                <label htmlFor="cep" className="text-sm font-medium">
+                  CEP
+                </label>
+                <Input
+                  id="cep"
+                  name="cep"
+                  placeholder="00000-000"
+                  value={proprietarioData.cep}
+                  onChange={handleProprietarioChange}
+                />
+                {errors.cep && (
+                  <p className="text-sm text-red-500">{errors.cep}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <label htmlFor="endereco" className="text-sm font-medium">
                   Endereço
                 </label>
-                <Input 
-                  id="endereco" 
+                <Input
+                  id="endereco"
                   name="endereco"
-                  placeholder="Rua, número" 
+                  placeholder="Rua, número"
                   value={proprietarioData.endereco}
                   onChange={handleProprietarioChange}
                 />
@@ -298,8 +384,8 @@ export default function RegisterPage() {
                   <label htmlFor="cidade" className="text-sm font-medium">
                     Cidade
                   </label>
-                  <Input 
-                    id="cidade" 
+                  <Input
+                    id="cidade"
                     name="cidade"
                     value={proprietarioData.cidade}
                     onChange={handleProprietarioChange}
@@ -312,33 +398,18 @@ export default function RegisterPage() {
                   <label htmlFor="estado" className="text-sm font-medium">
                     Estado
                   </label>
-                  <Input 
-                    id="estado" 
+                  <Input
+                    id="estado"
                     name="estado"
-                    maxLength={2} 
+                    maxLength={2}
                     value={proprietarioData.estado}
                     onChange={handleProprietarioChange}
+                    disabled
                   />
                   {errors.estado && (
                     <p className="text-sm text-red-500">{errors.estado}</p>
                   )}
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="cep" className="text-sm font-medium">
-                  CEP
-                </label>
-                <Input 
-                  id="cep" 
-                  name="cep"
-                  placeholder="00000-000" 
-                  value={proprietarioData.cep}
-                  onChange={handleProprietarioChange}
-                />
-                {errors.cep && (
-                  <p className="text-sm text-red-500">{errors.cep}</p>
-                )}
               </div>
 
               <div className="pt-2">
@@ -360,11 +431,13 @@ export default function RegisterPage() {
             className="w-full bg-gradient-to-r from-emerald-600 to-green-500"
             disabled={isLoading}
           >
-            {isLoading
-              ? "Registrando..."
-              : step === 1 && formData.isProprietario
-              ? "Próximo"
-              : "Registrar"}
+            <p style={{color: 'white'}}>
+              {isLoading
+                ? "Registrando..."
+                : step === 1 && formData.isProprietario
+                  ? "Próximo"
+                  : "Registrar"}
+            </p>
           </Button>
           <div className="text-center text-sm text-slate-600">
             Já tem uma conta?{" "}

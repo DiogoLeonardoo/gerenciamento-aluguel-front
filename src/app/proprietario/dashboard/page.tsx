@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { authService } from "@/lib/api";
 
 export default function ProprietarioDashboardPage() {
+  const router = useRouter();
+  
   useEffect(() => {
     // Fetch proprietario-specific data when component mounts
   }, []);
@@ -22,23 +26,30 @@ export default function ProprietarioDashboardPage() {
               Total de Imóveis
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-500">
-              Imóveis Alugados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
+        <CardContent>
+          <div className="text-2xl font-bold">0</div>
+          <div className="mt-2">
+            <Button 
+              variant="link" 
+              className="text-emerald-600 p-0 h-auto"
+              onClick={() => router.push("/proprietario/casas")}
+            >
+              Gerenciar imóveis
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-500">
+            Imóveis Alugados
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">0</div>
+        </CardContent>
+      </Card>        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-500">
               Receita Mensal

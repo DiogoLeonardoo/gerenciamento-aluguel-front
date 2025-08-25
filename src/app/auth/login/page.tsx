@@ -124,7 +124,7 @@ export default function LoginPage() {
             className="w-full bg-gradient-to-r from-emerald-600 to-green-500"
             disabled={isLoading}
           >
-            {isLoading ? "Entrando..." : "Entrar"}
+            <p style={{color:'white'}}>{isLoading ? "Entrando..." : "Entrar"}</p>
           </Button>
           <div className="text-center text-sm text-slate-600">
             Não tem uma conta?{" "}
