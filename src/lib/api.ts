@@ -10,6 +10,26 @@ import {
   NovoHospede
 } from "./types";
 
+// Função para exibir mensagens de erro em modais
+// Esta função será exportada para ser usada pelos componentes React
+export const handleApiError = (error: any, defaultMessage = "Ocorreu um erro"): string => {
+  let errorMessage = defaultMessage;
+  
+  if (error.response && error.response.data) {
+    // Se a API retornou uma mensagem de erro estruturada
+    if (error.response.data.message) {
+      errorMessage = error.response.data.message;
+    } else if (typeof error.response.data === 'string') {
+      errorMessage = error.response.data;
+    }
+  } else if (error.message) {
+    // Se é um erro JavaScript padrão
+    errorMessage = error.message;
+  }
+  
+  return errorMessage;
+};
+
 // API URL as a variable that can be changed later
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 // Use a proxy for API requests to avoid CORS issues
@@ -739,9 +759,14 @@ export const reservasService = {
         : await api.put(`/api/reservas/${id}/confirmar`);
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Erro ao confirmar reserva ID ${id}:`, error);
-      throw error;
+      
+      // Extrair a mensagem de erro formatada
+      const errorMessage = handleApiError(error, "Erro ao confirmar reserva");
+      
+      // Propaga o erro com a mensagem formatada para ser tratado pelo componente
+      throw new Error(errorMessage);
     }
   },
 
@@ -757,9 +782,14 @@ export const reservasService = {
         : await api.put(`/api/reservas/${id}/checkin`);
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Erro ao fazer check-in da reserva ID ${id}:`, error);
-      throw error;
+      
+      // Extrair a mensagem de erro formatada
+      const errorMessage = handleApiError(error, "Erro ao fazer check-in");
+      
+      // Propaga o erro com a mensagem formatada para ser tratado pelo componente
+      throw new Error(errorMessage);
     }
   },
 
@@ -775,27 +805,60 @@ export const reservasService = {
         : await api.put(`/api/reservas/${id}/checkout`);
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Erro ao fazer check-out da reserva ID ${id}:`, error);
-      throw error;
+      
+      // Extrair a mensagem de erro formatada
+      const errorMessage = handleApiError(error, "Erro ao fazer check-out");
+      
+      // Propaga o erro com a mensagem formatada para ser tratado pelo componente
+      throw new Error(errorMessage);
     }
   },
 
   // Cancelar uma reserva
-  cancelarReserva: async (id: number) => {
+  cancelarReserva: async (id: number, motivo: string) => {
     try {
       if (!authService.isAuthenticated()) {
         throw new Error("Usuário não está autenticado");
       }
 
       const response = USE_PROXY
-        ? await api.put(`/api/proxy?path=api/reservas/${id}/cancelar`)
-        : await api.put(`/api/reservas/${id}/cancelar`);
+        ? await api.put(`/api/proxy?path=api/reservas/${id}/cancelar`, { motivo })
+        : await api.put(`/api/reservas/${id}/cancelar`, { motivo });
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Erro ao cancelar reserva ID ${id}:`, error);
-      throw error;
+      
+      // Extrair a mensagem de erro formatada
+      const errorMessage = handleApiError(error, "Erro ao cancelar reserva");
+      
+      // Propaga o erro com a mensagem formatada para ser tratado pelo componente
+      throw new Error(errorMessage);
+    }
+  },
+
+  // Finalizar uma reserva (concluir após checkout)
+  finalizarReserva: async (id: number) => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error("Usuário não está autenticado");
+      }
+
+      const response = USE_PROXY
+        ? await api.put(`/api/proxy?path=api/reservas/${id}/concluir`)
+        : await api.put(`/api/reservas/${id}/concluir`);
+
+      return response.data;
+    } catch (error: any) {
+      console.error(`Erro ao finalizar reserva ID ${id}:`, error);
+      
+      // Extrair a mensagem de erro formatada
+      const errorMessage = handleApiError(error, "Erro ao finalizar reserva");
+      
+      // Propaga o erro com a mensagem formatada para ser tratado pelo componente
+      throw new Error(errorMessage);
     }
   },
 
