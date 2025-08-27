@@ -184,7 +184,7 @@ export default function AdicionarHospedePage() {
                   disabled={isLoading || !cep || cep.length !== 9}
                   className="bg-emerald-600 hover:bg-emerald-700"
                 >
-                  Buscar
+                  <p style={{color:'white'}}>Buscar</p>
                 </Button>
               </div>
               {errors.cep && <span className="text-xs text-red-500">{errors.cep.message}</span>}
@@ -270,7 +270,7 @@ export default function AdicionarHospedePage() {
               className="bg-emerald-600 hover:bg-emerald-700"
               disabled={isLoading}
             >
-              {isLoading ? 'Salvando...' : 'Salvar Hóspede'}
+              <p style={{color: 'white'}}>{isLoading ? 'Salvando...' : 'Salvar Hóspede'}</p>
             </Button>
           </div>
         </form>

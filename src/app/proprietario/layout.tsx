@@ -3,7 +3,6 @@ import Link from "next/link";
 import AuthCheck from "@/components/auth-check";
 import RoleGuard from "@/components/role-guard";
 import LogoutButton from "@/components/logout-button";
-import { Toaster } from "@/components/ui/toast";
 
 export const metadata: Metadata = {
   title: "Proprietário Dashboard - Sistema de Gerenciamento de Aluguéis",
@@ -18,7 +17,6 @@ export default function ProprietarioLayout({
   return (
     <AuthCheck>
       <RoleGuard allowedRoles={['PROPRIETARIO']}>
-        <Toaster />
         <div className="min-h-screen flex">
           {/* Proprietário Sidebar */}
           <div className="w-64 bg-emerald-600 text-white p-4 hidden md:block">

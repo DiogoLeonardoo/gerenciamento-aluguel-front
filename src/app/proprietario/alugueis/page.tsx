@@ -4,27 +4,33 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { reservasService } from "@/lib/api";
 import { Reserva, StatusReserva } from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Calendar, 
-  LogIn, 
-  LogOut, 
-  Users, 
+import {
+  CheckCircle,
+  XCircle,
+  Calendar,
+  LogIn,
+  LogOut,
+  Users,
   DollarSign,
   Info,
   Plus
 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 // Helper function to format dates
 const formatDate = (dateString: string) => {
   try {
-    return format(parseISO(dateString), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    // Usando uma string fixa para o formato para evitar problemas de hidratação
+    // e garantindo que o cliente e o servidor renderizem o mesmo resultado
+    return format(parseISO(dateString), "dd/MM/yyyy");
   } catch (error) {
     console.error("Erro ao formatar data:", error);
     return dateString;
@@ -33,30 +39,30 @@ const formatDate = (dateString: string) => {
 
 // Component to display status badge
 const StatusBadge = ({ status }: { status: StatusReserva }) => {
+  // Simplificando a função para evitar problemas de hidratação com componentes de ícone dinâmicos
   const getStatusInfo = () => {
     switch (status) {
       case "PENDENTE":
-        return { color: "bg-yellow-100 text-yellow-800", icon: <Info size={16} /> };
+        return { color: "bg-yellow-100 text-yellow-800" };
       case "CONFIRMADA":
-        return { color: "bg-blue-100 text-blue-800", icon: <CheckCircle size={16} /> };
+        return { color: "bg-blue-100 text-blue-800" };
       case "CANCELADA":
-        return { color: "bg-red-100 text-red-800", icon: <XCircle size={16} /> };
+        return { color: "bg-red-100 text-red-800" };
       case "CONCLUIDA":
-        return { color: "bg-green-100 text-green-800", icon: <CheckCircle size={16} /> };
+        return { color: "bg-green-100 text-green-800" };
       case "CHECKIN":
-        return { color: "bg-purple-100 text-purple-800", icon: <LogIn size={16} /> };
+        return { color: "bg-green-100 text-green-800" };
       case "CHECKOUT":
-        return { color: "bg-gray-100 text-gray-800", icon: <LogOut size={16} /> };
+        return { color: "bg-gray-100 text-gray-800" };
       default:
-        return { color: "bg-gray-100 text-gray-600", icon: <Info size={16} /> };
+        return { color: "bg-gray-100 text-gray-600" };
     }
   };
 
-  const { color, icon } = getStatusInfo();
+  const { color } = getStatusInfo();
 
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-      <span className="mr-1">{icon}</span>
       {status}
     </span>
   );
@@ -69,6 +75,9 @@ export default function GerenciarAlugueis() {
   const [error, setError] = useState<string | null>(null);
   const [checkinsHoje, setCheckinsHoje] = useState<Reserva[]>([]);
   const [checkoutsHoje, setCheckoutsHoje] = useState<Reserva[]>([]);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelMotivo, setCancelMotivo] = useState('');
+  const [reservaIdToCancel, setReservaIdToCancel] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -77,14 +86,14 @@ export default function GerenciarAlugueis() {
         setLoading(true);
         const data = await reservasService.getReservas();
         setReservas(data);
-        
+
         // Fetch today's check-ins and check-outs
         const checkins = await reservasService.getCheckinsHoje();
         setCheckinsHoje(checkins);
-        
+
         const checkouts = await reservasService.getCheckoutsHoje();
         setCheckoutsHoje(checkouts);
-        
+
         setError(null);
       } catch (err: any) {
         console.error("Erro ao carregar reservas:", err);
@@ -100,35 +109,50 @@ export default function GerenciarAlugueis() {
   const handleStatusChange = async (id: number, action: 'confirmar' | 'checkin' | 'checkout' | 'cancelar') => {
     try {
       setLoading(true);
-      let updatedReserva;
+      let updatedReserva: Reserva | undefined;
+      let successMessage = "";
 
       switch (action) {
         case 'confirmar':
           updatedReserva = await reservasService.confirmarReserva(id);
+          successMessage = "Reserva confirmada com sucesso!";
           break;
         case 'checkin':
           updatedReserva = await reservasService.fazerCheckin(id);
+          successMessage = "Check-in realizado com sucesso!";
           break;
         case 'checkout':
           updatedReserva = await reservasService.fazerCheckout(id);
+          successMessage = "Check-out realizado com sucesso!";
           break;
         case 'cancelar':
-          updatedReserva = await reservasService.cancelarReserva(id);
-          break;
+          // Esta parte será tratada pelo diálogo, não pelo switch
+          // Não faz nada aqui, pois vamos abrir o diálogo primeiro
+          return; // Sai da função, o cancelamento será processado após o diálogo
       }
 
+      // Mostrar mensagem de sucesso
+      toast.success(successMessage);
+
       // Update the reservations list
-      setReservas(prev => prev.map(res => res.id === id ? updatedReserva : res));
-      
+      if (updatedReserva) {
+        setReservas(prev => prev.map(res => res.id === id ? updatedReserva : res));
+      }
+
       // Refresh check-ins and check-outs for today
       const checkins = await reservasService.getCheckinsHoje();
       setCheckinsHoje(checkins);
-      
+
       const checkouts = await reservasService.getCheckoutsHoje();
       setCheckoutsHoje(checkouts);
-      
+
     } catch (err: any) {
       console.error(`Erro ao ${action} reserva:`, err);
+
+      // Exibir a mensagem de erro em um toast
+      toast.error(err.message || `Erro ao ${action} reserva`);
+
+      // Também definir o erro no estado para possível exibição na interface
       setError(err.message || `Erro ao ${action} reserva`);
     } finally {
       setLoading(false);
@@ -140,17 +164,22 @@ export default function GerenciarAlugueis() {
       case "PENDENTE":
         return (
           <>
-            <Button 
+            <Button
               onClick={() => handleStatusChange(reserva.id!, 'confirmar')}
-              className="bg-blue-600 hover:bg-blue-700 mr-2"
+              className="bg-green-600 hover:bg-green-700 mr-2"
               size="sm"
             >
               <CheckCircle className="mr-1 h-4 w-4" /> Confirmar
             </Button>
-            <Button 
-              onClick={() => handleStatusChange(reserva.id!, 'cancelar')}
+            <Button
+              onClick={() => {
+                setReservaIdToCancel(reserva.id!);
+                setCancelMotivo('');
+                setShowCancelDialog(true);
+              }}
               variant="destructive"
               size="sm"
+              className="bg-red-300 hover:bg-red-400 mr-2"
             >
               <XCircle className="mr-1 h-4 w-4" /> Cancelar
             </Button>
@@ -159,17 +188,23 @@ export default function GerenciarAlugueis() {
       case "CONFIRMADA":
         return (
           <>
-            <Button 
+            <Button
               onClick={() => handleStatusChange(reserva.id!, 'checkin')}
-              className="bg-purple-600 hover:bg-purple-700 mr-2"
+              className="bg-orange-600 hover:bg-orange-700 mr-2"
               size="sm"
             >
-              <LogIn className="mr-1 h-4 w-4" /> Check-in
+              <LogIn className="mr-1 h-4 w-4 text-white" />
+              <span className="text-white">Check-in</span>
             </Button>
-            <Button 
-              onClick={() => handleStatusChange(reserva.id!, 'cancelar')}
+            <Button
+              onClick={() => {
+                setReservaIdToCancel(reserva.id!);
+                setCancelMotivo('');
+                setShowCancelDialog(true);
+              }}
               variant="destructive"
               size="sm"
+              className="bg-red-300 hover:bg-red-400 mr-2"
             >
               <XCircle className="mr-1 h-4 w-4" /> Cancelar
             </Button>
@@ -177,7 +212,7 @@ export default function GerenciarAlugueis() {
         );
       case "CHECKIN":
         return (
-          <Button 
+          <Button
             onClick={() => handleStatusChange(reserva.id!, 'checkout')}
             className="bg-emerald-600 hover:bg-emerald-700"
             size="sm"
@@ -209,14 +244,15 @@ export default function GerenciarAlugueis() {
 
       {/* Dashboard cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+        <Card className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg flex items-center text-purple-700">
-              <LogIn className="mr-2 h-5 w-5" /> Check-ins de Hoje
+              <LogIn className="mr-2 h-5 w-5 text-black" />
+              <span className="text-black">Check-ins de Hoje</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-purple-800">{checkinsHoje.length}</p>
+            <p className="text-2xl font-bold text-yellow-800">{checkinsHoje.length}</p>
             <div className="mt-2 space-y-2">
               {checkinsHoje.length > 0 ? (
                 checkinsHoje.map(checkin => (
@@ -276,8 +312,8 @@ export default function GerenciarAlugueis() {
               </div>
             </div>
             <div className="mt-2">
-              <Link 
-                href="/proprietario/alugueis/faturamento" 
+              <Link
+                href="/proprietario/alugueis/faturamento"
                 className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
               >
                 Ver relatório de faturamento →
@@ -352,13 +388,10 @@ export default function GerenciarAlugueis() {
                         <div className="font-medium">
                           R$ {(reserva.valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Pago: R$ {(reserva.valorPago || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <div className="flex items-center space-x-2">
-                          <Button 
+                          <Button
                             size="sm"
                             variant="outline"
                             onClick={() => router.push(`/proprietario/alugueis/${reserva.id}`)}
@@ -377,7 +410,7 @@ export default function GerenciarAlugueis() {
             <div className="text-center py-8 border border-dashed rounded-md">
               <Calendar className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2 text-gray-500">Nenhuma reserva encontrada</p>
-              <Button 
+              <Button
                 onClick={() => router.push('/proprietario/alugueis/criar')}
                 className="mt-4"
               >
@@ -387,6 +420,72 @@ export default function GerenciarAlugueis() {
           )}
         </CardContent>
       </Card>
+
+      {/* Diálogo de cancelamento */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancelar Reserva</DialogTitle>
+          </DialogHeader>
+
+          <div className="py-4">
+            <Label htmlFor="cancelMotivo">Motivo do cancelamento</Label>
+            <Input
+              id="cancelMotivo"
+              value={cancelMotivo}
+              onChange={(e) => setCancelMotivo(e.target.value)}
+              placeholder="Informe o motivo do cancelamento"
+              className="mt-2"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCancelDialog(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (reservaIdToCancel) {
+                  try {
+                    setLoading(true);
+                    const updatedReserva = await reservasService.cancelarReserva(reservaIdToCancel, cancelMotivo);
+
+                    // Mostrar mensagem de sucesso
+                    toast.success("Reserva cancelada com sucesso!");
+
+                    // Atualizar lista de reservas
+                    if (updatedReserva) {
+                      setReservas(prev => prev.map(res => res.id === reservaIdToCancel ? updatedReserva : res));
+                    }
+
+                    // Atualizar check-ins e check-outs do dia
+                    const checkins = await reservasService.getCheckinsHoje();
+                    setCheckinsHoje(checkins);
+
+                    const checkouts = await reservasService.getCheckoutsHoje();
+                    setCheckoutsHoje(checkouts);
+
+                  } catch (err: any) {
+                    console.error("Erro ao cancelar reserva:", err);
+                    toast.error(err.message || "Erro ao cancelar reserva");
+                    setError(err.message || "Erro ao cancelar reserva");
+                  } finally {
+                    setLoading(false);
+                    setShowCancelDialog(false);
+                  }
+                }
+              }}
+              disabled={!cancelMotivo.trim()}
+            >
+              Confirmar Cancelamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
