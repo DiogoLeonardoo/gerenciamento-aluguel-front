@@ -48,7 +48,7 @@ const StatusBadge = ({ status }: { status: StatusReserva }) => {
       case "CONCLUIDA":
         return { color: "bg-green-100 text-green-800", icon: <CheckCircle size={16} /> };
       case "CHECKIN":
-        return { color: "bg-purple-100 text-purple-800", icon: <LogIn size={16} /> };
+        return { color: "bg-yellow-100 text-yellow-800", icon: <LogIn size={16} /> };
       case "CHECKOUT":
         return { color: "bg-gray-100 text-gray-800", icon: <LogOut size={16} /> };
       default:
@@ -150,9 +150,9 @@ export default function DetalhesReserva() {
           <>
             <Button 
               onClick={() => handleStatusChange('checkin')}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-emerald-600 hover:bg-emerald-700"
             >
-              <LogIn className="mr-2 h-4 w-4" /> Realizar Check-in
+              <LogIn style={{color: 'white'}} className="mr-2 h-4 w-4" /> <p style={{color: 'white'}}>Realizar Check-in</p>
             </Button>
             <Button 
               onClick={() => handleStatusChange('cancelar')}
@@ -291,22 +291,6 @@ export default function DetalhesReserva() {
                       R$ {(reserva.valorTotal || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-gray-600">Valor Pago</span>
-                    <span className="font-medium">
-                      R$ {reserva.valorPago.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                    </span>
-                  </div>
-                  
-                  {/* If there's a balance due */}
-                  {(reserva.valorTotal || 0) > reserva.valorPago && (
-                    <div className="flex justify-between items-center mt-2 text-red-600">
-                      <span>Saldo a Pagar</span>
-                      <span className="font-medium">
-                        R$ {((reserva.valorTotal || 0) - reserva.valorPago).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
 
