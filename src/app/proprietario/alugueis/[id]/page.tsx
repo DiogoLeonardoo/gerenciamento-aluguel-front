@@ -110,7 +110,7 @@ export default function DetalhesReserva() {
           updatedReserva = await reservasService.fazerCheckout(reserva.id);
           break;
         case 'cancelar':
-          updatedReserva = await reservasService.cancelarReserva(reserva.id);
+          updatedReserva = await reservasService.cancelarReserva(reserva.id, reserva.motivo);
           break;
       }
 

@@ -136,6 +136,7 @@ export type Reserva = {
   dataCheckoutValid?: boolean;
   createdAt?: string;
   updatedAt?: string;
+  motivo: string;
 };
 
 export type NovaReserva = Omit<Reserva, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'casa' | 'hospedePrincipal' | 'hospedes'>;
