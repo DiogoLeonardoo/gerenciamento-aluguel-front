@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Casa, CasaFormData, InventarioItem } from "@/lib/types";
 import { casasService, authService, inventarioService } from "@/lib/api";
 import { maskCEP, removeMask } from "@/lib/validation";
 import { buscarEndereco } from "@/lib/cep-busca";
 import { InventarioSection } from "@/components/ui/inventario-section";
-import { X } from "lucide-react";
+import { X, Home, MapPin, Bed, Bath, Users, DollarSign, FileText } from "lucide-react";
 
 export default function AdicionarCasaPage() {
   const [formData, setFormData] = useState<CasaFormData>({
@@ -276,158 +277,197 @@ export default function AdicionarCasaPage() {
                 </div>
               )}
             
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="nome" className="block text-sm font-medium mb-1">
-                  Nome do imóvel *
-                </label>
-                <Input
-                  id="nome"
-                  name="nome"
-                  value={formData.nome}
-                  onChange={handleChange}
-                  placeholder="Ex: Casa na Praia, Apartamento no Centro"
-                />
-                {errors.nome && <p className="text-sm text-red-500 mt-1">{errors.nome}</p>}
-              </div>
-              
-              <div>
-                <label htmlFor="cep" className="block text-sm font-medium mb-1">
-                  CEP *
-                </label>
-                <Input
-                  id="cep"
-                  name="cep"
-                  value={formData.cep}
-                  onChange={handleChange}
-                  placeholder="00000-000"
-                  maxLength={9}
-                />
-                {errors.cep && <p className="text-sm text-red-500 mt-1">{errors.cep}</p>}
-              </div>
-              
-              <div>
-                <label htmlFor="endereco" className="block text-sm font-medium mb-1">
-                  Endereço *
-                </label>
-                <Input
-                  id="endereco"
-                  name="endereco"
-                  value={formData.endereco}
-                  onChange={handleChange}
-                  placeholder="Rua, número, complemento"
-                />
-                {errors.endereco && <p className="text-sm text-red-500 mt-1">{errors.endereco}</p>}
-              </div>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label htmlFor="cidade" className="block text-sm font-medium mb-1">
-                    Cidade *
-                  </label>
-                  <Input
-                    id="cidade"
-                    name="cidade"
-                    value={formData.cidade}
-                    onChange={handleChange}
-                  />
-                  {errors.cidade && <p className="text-sm text-red-500 mt-1">{errors.cidade}</p>}
+            <div className="space-y-8">
+              {/* Informações Básicas */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Home className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Informações Básicas</h3>
                 </div>
                 
-                <div>
-                  <label htmlFor="estado" className="block text-sm font-medium mb-1">
-                    Estado (UF) *
-                  </label>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="nome" className="text-sm font-medium">
+                      Nome do imóvel *
+                    </Label>
+                    <Input
+                      id="nome"
+                      name="nome"
+                      value={formData.nome}
+                      onChange={handleChange}
+                      placeholder="Ex: Casa na Praia, Apartamento no Centro"
+                      className="h-11"
+                    />
+                    {errors.nome && <p className="text-sm text-red-500 mt-1">{errors.nome}</p>}
+                  </div>
+                  
+                  <div className="space-y-2 md:col-span-1">
+                    <Label htmlFor="cep" className="text-sm font-medium">
+                      CEP *
+                    </Label>
+                    <Input
+                      id="cep"
+                      name="cep"
+                      value={formData.cep}
+                      onChange={handleChange}
+                      placeholder="00000-000"
+                      maxLength={9}
+                      className="h-11"
+                    />
+                    {errors.cep && <p className="text-sm text-red-500 mt-1">{errors.cep}</p>}
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="endereco" className="text-sm font-medium">
+                    Endereço *
+                  </Label>
                   <Input
-                    id="estado"
-                    name="estado"
-                    value={formData.estado}
+                    id="endereco"
+                    name="endereco"
+                    value={formData.endereco}
                     onChange={handleChange}
-                    placeholder="SP"
-                    maxLength={2}
-                    className="uppercase"
-                    disabled
+                    placeholder="Rua, número, complemento"
+                    className="h-11"
                   />
-                  {errors.estado && <p className="text-sm text-red-500 mt-1">{errors.estado}</p>}
+                  {errors.endereco && <p className="text-sm text-red-500 mt-1">{errors.endereco}</p>}
+                </div>
+                
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="cidade" className="text-sm font-medium">
+                      Cidade *
+                    </Label>
+                    <Input
+                      id="cidade"
+                      name="cidade"
+                      value={formData.cidade}
+                      onChange={handleChange}
+                      className="h-11"
+                    />
+                    {errors.cidade && <p className="text-sm text-red-500 mt-1">{errors.cidade}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="estado" className="text-sm font-medium">
+                      Estado (UF) *
+                    </Label>
+                    <Input
+                      id="estado"
+                      name="estado"
+                      value={formData.estado}
+                      onChange={handleChange}
+                      placeholder="SP"
+                      maxLength={2}
+                      className="uppercase h-11"
+                      disabled
+                    />
+                    {errors.estado && <p className="text-sm text-red-500 mt-1">{errors.estado}</p>}
+                  </div>
                 </div>
               </div>
-              
-              <div>
-                <label htmlFor="descricao" className="block text-sm font-medium mb-1">
-                  Descrição *
-                </label>
-                <textarea
-                  id="descricao"
-                  name="descricao"
-                  value={formData.descricao}
-                  onChange={handleChange}
-                  rows={4}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  placeholder="Descreva seu imóvel, mencione pontos fortes, comodidades, etc."
-                />
-                {errors.descricao && <p className="text-sm text-red-500 mt-1">{errors.descricao}</p>}
+
+              {/* Descrição */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <FileText className="h-5 w-5 text-green-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Descrição</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="descricao" className="text-sm font-medium">
+                    Descrição detalhada *
+                  </Label>
+                  <textarea
+                    id="descricao"
+                    name="descricao"
+                    value={formData.descricao}
+                    onChange={handleChange}
+                    rows={5}
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Descreva seu imóvel, mencione pontos fortes, comodidades, localização, etc."
+                  />
+                  {errors.descricao && <p className="text-sm text-red-500 mt-1">{errors.descricao}</p>}
+                </div>
               </div>
-              
-              <div className="grid gap-4 md:grid-cols-4">
-                <div>
-                  <label htmlFor="quartos" className="block text-sm font-medium mb-1">
-                    Quartos *
-                  </label>
-                  <Input
-                    id="quartos"
-                    name="quartos"
-                    type="number"
-                    min={1}
-                    value={formData.quartos}
-                    onChange={handleChange}
-                  />
-                  {errors.quartos && <p className="text-sm text-red-500 mt-1">{errors.quartos}</p>}
+
+              {/* Características */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <MapPin className="h-5 w-5 text-purple-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Características</h3>
                 </div>
                 
-                <div>
-                  <label htmlFor="banheiros" className="block text-sm font-medium mb-1">
-                    Banheiros *
-                  </label>
-                  <Input
-                    id="banheiros"
-                    name="banheiros"
-                    type="number"
-                    min={1}
-                    value={formData.banheiros}
-                    onChange={handleChange}
-                  />
-                  {errors.banheiros && <p className="text-sm text-red-500 mt-1">{errors.banheiros}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="maxPessoas" className="block text-sm font-medium mb-1">
-                    Capacidade *
-                  </label>
-                  <Input
-                    id="maxPessoas"
-                    name="maxPessoas"
-                    type="number"
-                    min={1}
-                    value={formData.maxPessoas}
-                    onChange={handleChange}
-                  />
-                  {errors.maxPessoas && <p className="text-sm text-red-500 mt-1">{errors.maxPessoas}</p>}
-                </div>
-                
-                <div>
-                  <label htmlFor="valorDiaria" className="block text-sm font-medium mb-1">
-                    Valor Diária (R$) *
-                  </label>
-                  <Input
-                    id="valorDiaria"
-                    name="valorDiaria"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={formData.valorDiaria}
-                    onChange={handleChange}
-                  />
-                  {errors.valorDiaria && <p className="text-sm text-red-500 mt-1">{errors.valorDiaria}</p>}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quartos" className="text-sm font-medium flex items-center gap-2">
+                      <Bed className="h-4 w-4 text-blue-500" />
+                      Quartos *
+                    </Label>
+                    <Input
+                      id="quartos"
+                      name="quartos"
+                      type="number"
+                      min={1}
+                      value={formData.quartos}
+                      onChange={handleChange}
+                      className="h-11"
+                    />
+                    {errors.quartos && <p className="text-sm text-red-500 mt-1">{errors.quartos}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="banheiros" className="text-sm font-medium flex items-center gap-2">
+                      <Bath className="h-4 w-4 text-cyan-500" />
+                      Banheiros *
+                    </Label>
+                    <Input
+                      id="banheiros"
+                      name="banheiros"
+                      type="number"
+                      min={1}
+                      value={formData.banheiros}
+                      onChange={handleChange}
+                      className="h-11"
+                    />
+                    {errors.banheiros && <p className="text-sm text-red-500 mt-1">{errors.banheiros}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="maxPessoas" className="text-sm font-medium flex items-center gap-2">
+                      <Users className="h-4 w-4 text-green-500" />
+                      Capacidade *
+                    </Label>
+                    <Input
+                      id="maxPessoas"
+                      name="maxPessoas"
+                      type="number"
+                      min={1}
+                      value={formData.maxPessoas}
+                      onChange={handleChange}
+                      className="h-11"
+                    />
+                    {errors.maxPessoas && <p className="text-sm text-red-500 mt-1">{errors.maxPessoas}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="valorDiaria" className="text-sm font-medium flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-yellow-500" />
+                      Valor Diária *
+                    </Label>
+                    <Input
+                      id="valorDiaria"
+                      name="valorDiaria"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      value={formData.valorDiaria}
+                      onChange={handleChange}
+                      placeholder="0,00"
+                      className="h-11"
+                    />
+                    {errors.valorDiaria && <p className="text-sm text-red-500 mt-1">{errors.valorDiaria}</p>}
+                  </div>
                 </div>
               </div>
               
