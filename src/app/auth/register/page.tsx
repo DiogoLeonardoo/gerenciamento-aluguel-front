@@ -270,6 +270,7 @@ export default function RegisterPage() {
                   placeholder="(99) 99999-9999"
                   value={formData.telefone}
                   onChange={handleChange}
+                  maxLength={15} // Ajustado para 11 dígitos + máscara
                 />
                 {errors.telefone && (
                   <p className="text-sm text-red-500">{errors.telefone}</p>

@@ -8,11 +8,10 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // If user is authenticated, redirect to dashboard
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem("token");
       if (token) {
-        router.push("/dashboard");
+        router.push("/");
       }
     }
   }, [router]);
@@ -44,7 +43,7 @@ export default function HomePage() {
           <div className="space-x-4">
             <Link
               href="/auth/login"
-              className="px-4 py-2 text-emerald-500 hover:text-emerald-700 font-medium"
+              className="px-4 py-2 text-emerald-500 hover:text-emerald-700 font-medium border border-emerald-500 rounded-md"
             >
               Entrar
             </Link>

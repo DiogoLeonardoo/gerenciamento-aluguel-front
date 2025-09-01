@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { hospedesService } from '@/lib/api';
+import { hospedesService, authService } from '@/lib/api';
 import { Hospede, NovoHospede } from '@/lib/types';
 import { toast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { buscarEndereco } from '@/lib/cep-busca';
-import { maskCPF, maskCEP, maskPhone, validateCPF, validateCEP, validatePhone } from '@/lib/validation';
+import { maskCPF, maskCEP, maskPhone, validateCPF, validateCEP, validatePhone, removeMask } from '@/lib/validation';
 
 // Schema de validação para o formulário
 const hospedeSchema = z.object({
@@ -73,7 +73,20 @@ export default function AdicionarHospedePage() {
     setIsLoading(true);
 
     try {
-      await hospedesService.criarHospede(data);
+      // Get current user to extract proprietarioId
+      const currentUser = authService.getUser();
+      if (!currentUser || !currentUser.id) {
+        throw new Error('Usuário não identificado. Faça login novamente.');
+      }
+
+      // Remove masks from CPF and phone before sending to API
+      const cleanData = {
+        ...data,
+        cpf: data.cpf ? removeMask(data.cpf) : data.cpf,
+        telefone: data.telefone ? removeMask(data.telefone) : data.telefone,
+      };
+
+      await hospedesService.criarHospede(cleanData, currentUser.id);
       toast.success('Sucesso', 'Hóspede cadastrado com sucesso!');
       router.push('/proprietario/hospedes');
     } catch (error) {
@@ -156,6 +169,7 @@ export default function AdicionarHospedePage() {
                     onChange={e => onChange(e.target.value)}
                     className={`w-full p-2 border rounded-md ${errors.telefone ? 'border-red-500' : ''}`}
                     placeholder="(11) 99999-9999"
+                    maxLength={15} // Ajustado para 11 dígitos + máscara
                   />
                 )}
               />

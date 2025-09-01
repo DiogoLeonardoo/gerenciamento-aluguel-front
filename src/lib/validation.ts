@@ -37,7 +37,7 @@ export const validatePhone = (phone: string): boolean => {
   if (!phone) return false;
 
   const cleanPhone = phone.replace(/[^\d]/g, '');
-  return cleanPhone.length === 10 || cleanPhone.length === 11;
+  return cleanPhone.length === 11;
 };
 
 export const maskCPF = (value: string): string => {
@@ -62,10 +62,13 @@ export const maskPhone = (value: string): string => {
   if (!value) return '';
 
   const cleanValue = value.replace(/[^\d]/g, '');
-  if (cleanValue.length <= 2) return cleanValue;
-  if (cleanValue.length <= 6) return `(${cleanValue.slice(0, 2)}) ${cleanValue.slice(2)}`;
-  if (cleanValue.length <= 10) return `(${cleanValue.slice(0, 2)}) ${cleanValue.slice(2, 6)}-${cleanValue.slice(6)}`;
-  return `(${cleanValue.slice(0, 2)}) ${cleanValue.slice(2, 7)}-${cleanValue.slice(7, 11)}`;
+  // Limit to 11 digits
+  const limitedValue = cleanValue.slice(0, 11);
+
+  if (limitedValue.length <= 2) return limitedValue;
+  if (limitedValue.length <= 6) return `(${limitedValue.slice(0, 2)}) ${limitedValue.slice(2)}`;
+  if (limitedValue.length <= 10) return `(${limitedValue.slice(0, 2)}) ${limitedValue.slice(2, 6)}-${limitedValue.slice(6)}`;
+  return `(${limitedValue.slice(0, 2)}) ${limitedValue.slice(2, 7)}-${limitedValue.slice(7, 11)}`;
 };
 
 // Remove mask functions
@@ -86,7 +89,7 @@ export const validationMessages = {
   },
   phone: {
     required: 'Telefone é obrigatório',
-    invalid: 'Telefone deve conter 10 ou 11 dígitos',
+    invalid: 'Telefone deve conter 11 dígitos',
   },
   nome: {
     required: 'Nome é obrigatório',

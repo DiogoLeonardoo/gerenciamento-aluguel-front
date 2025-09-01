@@ -47,7 +47,7 @@ export default function ProprietarioLayout({
                     href="/proprietario/dashboard"
                     className="block py-2 px-4 rounded hover:bg-emerald-700 transition-colors"
                   >
-                    Dashboard
+                    Home
                   </Link>
                 </li>
                 <li>
@@ -74,12 +74,12 @@ export default function ProprietarioLayout({
                     Hóspedes
                   </Link>
                 </li>
-                <li>
+                 <li>
                   <Link
-                    href="/proprietario/inquilinos"
+                    href="/proprietario/hospedes"
                     className="block py-2 px-4 rounded hover:bg-emerald-700 transition-colors"
                   >
-                    Inquilinos
+                    Calendário
                   </Link>
                 </li>
                 <li>
