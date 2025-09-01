@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Casa } from "@/lib/types";
 import { casasService, authService } from "@/lib/api";
 import { PhotoCarousel } from "@/components/ui/photo-carousel";
-import { Power, PowerOff } from "lucide-react";
+import { Power, PowerOff, Home, MapPin, Users, Bed, Bath, DollarSign, Plus, Filter } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/toast";
 
@@ -261,41 +261,59 @@ export default function CasasListPage() {
         </DialogContent>
       </Dialog>
       
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Meus Imóveis</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white border-2 border-green-500 rounded-lg shadow-sm">
+            <Home className="h-6 w-6 text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              Meus Imóveis
+            </h1>
+            <p className="text-sm text-gray-500 mt-1">
+              {casasFiltradas.length} {casasFiltradas.length === 1 ? 'imóvel' : 'imóveis'} {filtro !== 'todos' ? `(${filtro})` : ''}
+            </p>
+          </div>
+        </div>
         {authorized && (
-          <Link href="/proprietario/casas/adicionar">
-            <Button className="bg-green-600 hover:bg-green-700">
-              <p style={{color: 'white'}}>Adicionar Imóvel</p>
+          <Link href="/proprietario/casas/adicionar" className="self-start sm:self-auto">
+            <Button className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="font-medium">Adicionar Imóvel</span>
             </Button>
           </Link>
         )}
       </div>
       
       {authorized && !isLoading && casas.length > 0 && (
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-6 p-4 bg-white rounded-lg shadow-sm border">
+          <div className="flex items-center gap-2 mr-4">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700">Filtrar:</span>
+          </div>
           <Button 
             variant={filtro === "todos" ? "default" : "outline"} 
             onClick={() => setFiltro("todos")}
             size="sm"
+            className={`transition-all duration-200 ${filtro === "todos" ? "shadow-md" : "hover:bg-gray-50"}`}
           >
-            Todos
+            Todos ({casas.length})
           </Button>
           <Button 
             variant={filtro === "ativos" ? "default" : "outline"} 
             onClick={() => setFiltro("ativos")}
             size="sm"
-            className={filtro === "ativos" ? "bg-green-600 hover:bg-green-700" : ""}
+            className={`transition-all duration-200 ${filtro === "ativos" ? "bg-green-600 hover:bg-green-700 shadow-md" : "hover:bg-green-50"}`}
           >
-            Ativos
+            Ativos ({casas.filter(c => c.ativa).length})
           </Button>
           <Button 
             variant={filtro === "inativos" ? "default" : "outline"} 
             onClick={() => setFiltro("inativos")}
             size="sm"
-            className={filtro === "inativos" ? "bg-red-600 hover:bg-red-700" : ""}
+            className={`transition-all duration-200 ${filtro === "inativos" ? "bg-red-600 hover:bg-red-700 shadow-md" : "hover:bg-red-50"}`}
           >
-            Inativos
+            Inativos ({casas.filter(c => !c.ativa).length})
           </Button>
         </div>
       )}
@@ -305,20 +323,30 @@ export default function CasasListPage() {
           {error}
         </div>
       ) : isLoading ? (
-        <div className="text-center py-10">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-solid border-emerald-500 border-r-transparent align-middle mb-2"></div>
-          <p>Carregando imóveis e fotos...</p>
+        <div className="flex flex-col items-center justify-center py-16">
+          <div className="w-16 h-16 border-4 border-green-200 rounded-full animate-spin border-t-green-600"></div>
+          <p className="mt-4 text-gray-600 font-medium">Carregando imóveis e fotos...</p>
+          <p className="text-sm text-gray-500 mt-1">Isso pode levar alguns segundos</p>
         </div>
       ) : error ? (
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded">
           {error}
         </div>
       ) : authorized && casas.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-gray-500 mb-4">Você ainda não possui imóveis cadastrados</p>
+        <Card className="border-2 border-dashed border-gray-300 bg-gray-50/50">
+          <CardContent className="py-16 text-center">
+            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+              <Home className="h-12 w-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum imóvel cadastrado</h3>
+            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+              Você ainda não possui imóveis cadastrados. Comece adicionando seu primeiro imóvel para começar a receber reservas.
+            </p>
             <Link href="/proprietario/casas/adicionar">
-              <Button>Cadastre seu primeiro imóvel</Button>
+              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="font-medium">Adicionar Primeiro Imóvel</span>
+              </Button>
             </Link>
           </CardContent>
         </Card>
@@ -333,11 +361,16 @@ export default function CasasListPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {casasFiltradas.map((casa) => (
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {casasFiltradas.map((casa, index) => (
             <Card 
               key={casa.id} 
-              className={`overflow-hidden ${!casa.ativa ? 'border-red-200 bg-red-50' : ''}`}
+              className={`overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-0 shadow-md bg-white ${
+                !casa.ativa 
+                  ? 'border-red-200 bg-red-50/50 hover:bg-red-50' 
+                  : 'hover:shadow-2xl hover:border-gray-200'
+              }`}
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="relative">
                 <PhotoCarousel 
@@ -363,41 +396,83 @@ export default function CasasListPage() {
                   </div>
                 )}
               </div>
-              <CardHeader>
-                <CardTitle>{casa.nome}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-500 mb-2 line-clamp-2">{casa.descricao}</p>
-                <p className="mb-1">{casa.cidade}, {casa.estado}</p>
-                <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                  <span>{casa.quartos} quartos</span>
-                  <span>{casa.banheiros} banheiros</span>
-                  <span>Até {casa.maxPessoas} pessoas</span>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <CardTitle className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
+                    {casa.nome}
+                  </CardTitle>
+                  <div className="flex items-center gap-1 ml-2">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                  </div>
                 </div>
-                <p className="text-xl font-bold text-green-600">R$ {casa.valorDiaria.toFixed(2)}/noite</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
+                  {casa.descricao}
+                </p>
+                
+                <div className="flex items-center text-sm text-gray-500">
+                  <MapPin className="h-4 w-4 mr-1 text-gray-400" />
+                  <span>{casa.cidade}, {casa.estado}</span>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3 py-2">
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Bed className="h-4 w-4 text-blue-500" />
+                    <span>{casa.quartos}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Bath className="h-4 w-4 text-cyan-500" />
+                    <span>{casa.banheiros}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-gray-600">
+                    <Users className="h-4 w-4 text-green-500" />
+                    <span>{casa.maxPessoas}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                    <span className="text-xl font-bold text-green-600">
+                      R$ {casa.valorDiaria.toFixed(2)}
+                    </span>
+                    <span className="text-sm text-gray-500">/noite</span>
+                  </div>
+                </div>
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center">
                     {casa.ativa ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        <span className="w-2 h-2 mr-1 bg-green-500 rounded-full"></span>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                        <div className="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></div>
                         Ativo
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        <span className="w-2 h-2 mr-1 bg-red-500 rounded-full"></span>
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                        <div className="w-2 h-2 mr-2 bg-red-500 rounded-full"></div>
                         Inativo
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <Link href={`/proprietario/casas/${casa.id}`}>
-                      <Button variant="outline" size="sm">Editar</Button>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Link href={`/proprietario/casas/${casa.id}`} className="flex-1 sm:flex-none">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="w-full sm:w-auto transition-all duration-200 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+                      >
+                        Editar
+                      </Button>
                     </Link>
                     <Button 
                       variant={casa.ativa ? "destructive" : "secondary"} 
                       size="sm"
                       onClick={() => prepararToggleStatus(casa)}
-                      className="flex items-center gap-1"
+                      className={`flex-1 sm:flex-none flex items-center justify-center gap-1 transition-all duration-200 ${
+                        casa.ativa 
+                          ? 'hover:bg-red-600 w-full sm:w-auto' 
+                          : 'bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto'
+                      }`}
                       disabled={isTogglingId === casa.id}
                     >
                       {casa.ativa ? (

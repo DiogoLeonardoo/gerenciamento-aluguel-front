@@ -52,7 +52,7 @@ export default function LoginPage() {
     try {
       const response = await authService.login(data.email, data.password);
       
-      const userRole = response.role || authService.getUserRole();
+      const userRole = response?.user?.role || authService.getUserRole();
       
       console.log("Login successful", userRole);
       
@@ -73,7 +73,8 @@ export default function LoginPage() {
   }
 
   return (
-    <Card className="w-full max-w-md border-slate-200 shadow-lg">
+    <div className="min-h-screen flex items-center justify-center">
+      <Card className="w-full max-w-md border-slate-200 shadow-lg">
       <CardHeader className="space-y-1 bg-white">
         <CardTitle className="text-2xl font-bold text-slate-700">Login</CardTitle>
         <CardDescription className="text-slate-500">
@@ -161,5 +162,6 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+    </div>
   );
 }
