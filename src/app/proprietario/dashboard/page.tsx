@@ -95,7 +95,7 @@ export default function ProprietarioDashboardPage() {
       </div>
 
       {/* Resumo */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card
           className="bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200 shadow-md hover:shadow-lg transition cursor-pointer"
           onClick={() => router.push("/proprietario/casas")}
@@ -180,7 +180,7 @@ export default function ProprietarioDashboardPage() {
       </Card>
 
       {/* Ações principais */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card
           className="shadow-sm hover:shadow-md transition cursor-pointer"
           onClick={() => router.push("/proprietario/casas")}
