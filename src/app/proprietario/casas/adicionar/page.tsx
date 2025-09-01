@@ -11,6 +11,7 @@ import { casasService, authService, inventarioService } from "@/lib/api";
 import { maskCEP, removeMask } from "@/lib/validation";
 import { buscarEndereco } from "@/lib/cep-busca";
 import { InventarioSection } from "@/components/ui/inventario-section";
+import { toast } from "@/components/ui/toast";
 import { X, Home, MapPin, Bed, Bath, Users, DollarSign, FileText } from "lucide-react";
 
 export default function AdicionarCasaPage() {
@@ -167,12 +168,11 @@ export default function AdicionarCasaPage() {
     if (formData.maxPessoas <= 0) newErrors.maxPessoas = "Capacidade deve ser maior que zero";
     if (formData.valorDiaria <= 0) newErrors.valorDiaria = "Valor da diária deve ser maior que zero";
     
-    // Check if at least one photo is uploaded
-    if (fotos.length === 0) {
-      newErrors.fotos = "É necessário adicionar pelo menos uma foto do imóvel";
-      // Display the error near the photos section
-      setError("É necessário adicionar pelo menos uma foto do imóvel");
-    }
+    // Check if at least one photo is uploaded (optional for creation, can be added later)
+    // if (fotos.length === 0) {
+    //   newErrors.fotos = "É necessário adicionar pelo menos uma foto do imóvel";
+    //   setError("É necessário adicionar pelo menos uma foto do imóvel");
+    // }
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -193,30 +193,37 @@ export default function AdicionarCasaPage() {
     setError(null);
     
     try {
-      // Create a FormData object to send files
-      const formDataObj = new FormData();
+      // Step 1: Create the casa first without photos
+      const casaDataJson = {
+        nome: formData.nome,
+        descricao: formData.descricao,
+        endereco: formData.endereco,
+        cidade: formData.cidade,
+        estado: formData.estado,
+        cep: removeMask(formData.cep),
+        quartos: formData.quartos,
+        banheiros: formData.banheiros,
+        maxPessoas: formData.maxPessoas,
+        valorDiaria: formData.valorDiaria,
+        ativa: formData.ativa
+      };
       
-      // Add text fields
-      formDataObj.append("nome", formData.nome);
-      formDataObj.append("descricao", formData.descricao);
-      formDataObj.append("endereco", formData.endereco);
-      formDataObj.append("cidade", formData.cidade);
-      formDataObj.append("estado", formData.estado);
-      formDataObj.append("cep", removeMask(formData.cep));
-      formDataObj.append("quartos", formData.quartos.toString());
-      formDataObj.append("banheiros", formData.banheiros.toString());
-      formDataObj.append("maxPessoas", formData.maxPessoas.toString());
-      formDataObj.append("valorDiaria", formData.valorDiaria.toString());
+      // Create the casa using JSON endpoint (without files)
+      const casaCriada = await casasService.criarCasaJson(casaDataJson);
       
-      // Add photos if there are any
-      fotos.forEach(foto => {
-        formDataObj.append("files", foto); // Changed from "fotos" to "files" to match the backend API
-      });
+      // Step 2: Upload photos if any exist
+      if (fotos.length > 0 && casaCriada && casaCriada.id) {
+        try {
+          await casasService.uploadFotosCasa(casaCriada.id, fotos);
+          console.log(`Fotos enviadas com sucesso para a casa ${casaCriada.id}`);
+        } catch (photoErr) {
+          console.error("Erro ao enviar fotos:", photoErr);
+          // Don't fail the entire process if photos fail
+          toast.warning("Aviso", "Casa criada com sucesso, mas houve erro ao enviar as fotos. Você pode adicioná-las posteriormente.");
+        }
+      }
       
-      // Create the casa first
-      const casaCriada = await casasService.criarCasa(formDataObj);
-      
-      // If inventory items exist, add them to the casa
+      // Step 3: Add inventory items if any exist
       if (inventario.length > 0 && casaCriada && casaCriada.id) {
         try {
           await inventarioService.adicionarMultiplosItensInventario(
@@ -230,17 +237,23 @@ export default function AdicionarCasaPage() {
               observacoes: item.observacoes || "",
             }))
           );
+          console.log(`Inventário adicionado com sucesso para a casa ${casaCriada.id}`);
         } catch (inventarioErr) {
           console.error("Erro ao adicionar itens ao inventário:", inventarioErr);
-          // Continue with navigation even if inventory fails
+          // Don't fail the entire process if inventory fails
+          toast.warning("Aviso", "Casa criada com sucesso, mas houve erro ao adicionar itens do inventário. Você pode adicioná-los posteriormente.");
         }
       }
+      
+      toast.success("Sucesso", "Imóvel cadastrado com sucesso!");
       
       // Navigate back to casa listing after success
       router.push("/proprietario/casas");
       
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || "Erro ao cadastrar imóvel");
+      const errorMsg = err.response?.data?.message || err.message || "Erro ao cadastrar imóvel";
+      setError(errorMsg);
+      toast.error("Erro", errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -285,7 +298,7 @@ export default function AdicionarCasaPage() {
                   <h3 className="text-lg font-semibold text-gray-900">Informações Básicas</h3>
                 </div>
                 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="nome" className="text-sm font-medium">
                       Nome do imóvel *
@@ -333,7 +346,7 @@ export default function AdicionarCasaPage() {
                   {errors.endereco && <p className="text-sm text-red-500 mt-1">{errors.endereco}</p>}
                 </div>
                 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="cidade" className="text-sm font-medium">
                       Cidade *
@@ -398,7 +411,7 @@ export default function AdicionarCasaPage() {
                   <h3 className="text-lg font-semibold text-gray-900">Características</h3>
                 </div>
                 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-2">
                     <Label htmlFor="quartos" className="text-sm font-medium flex items-center gap-2">
                       <Bed className="h-4 w-4 text-blue-500" />
