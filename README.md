@@ -7,10 +7,6 @@
 
 O InHouse é uma plataforma web completa para gerenciamento de imóveis e aluguéis, desenvolvida para proprietários que desejam administrar suas propriedades, reservas, hóspedes e finanças de forma simples e eficiente.
 
-<div align="center">
-  <img src="public/images/inhouse-logo.png" alt="InHouse Logo" width="200" style="background-color: #11B981; padding: 10px; border-radius: 8px;"/>
-</div>
-
 ## 📋 Sumário
 
 - [Visão Geral](#visão-geral)
