@@ -21,6 +21,7 @@ O InHouse é uma plataforma web completa para gerenciamento de imóveis e alugu�
 - [API e Integração](#api-e-integração)
 - [Autenticação e Autorização](#autenticação-e-autorização)
 - [Layout e UI](#layout-e-ui)
+- [Screenshots](#screenshots)
 - [Contribuição](#contribuição)
 
 ## 🔍 Visão Geral
@@ -140,7 +141,21 @@ O layout da aplicação foi desenvolvido com foco na experiência do usuário, u
 - **Componentes reutilizáveis** para manter consistência visual
 - **Design adaptativo** para diferentes dispositivos
 
-## 👥 Contribuição
+## � Screenshots
+
+### Dashboard
+![Dashboard do Sistema](public/dashboard-inhouse.png)
+
+### Gerenciamento de Imóveis
+![Gerenciamento de Casas](public/houses.jpg)
+
+### Gerenciamento de Hóspedes
+![Página de Hóspedes](public/hospedes.png)
+
+### Relatórios Financeiros
+![Módulo Financeiro](public/financeiro.png)
+
+## �👥 Contribuição
 
 Para contribuir com o projeto:
 
