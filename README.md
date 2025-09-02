@@ -151,7 +151,7 @@ O layout da aplicação foi desenvolvido com foco na experiência do usuário, u
 ### Relatórios Financeiros
 ![Módulo Financeiro](public/financeiro.png)
 
-## �👥 Contribuição
+## 👥 Contribuição
 
 Para contribuir com o projeto:
 
