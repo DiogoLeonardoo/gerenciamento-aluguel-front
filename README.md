@@ -137,7 +137,7 @@ O layout da aplicação foi desenvolvido com foco na experiência do usuário, u
 - **Componentes reutilizáveis** para manter consistência visual
 - **Design adaptativo** para diferentes dispositivos
 
-## � Screenshots
+## Screenshots
 
 ### Dashboard
 ![Dashboard do Sistema](public/dashboard-inhouse.png)
