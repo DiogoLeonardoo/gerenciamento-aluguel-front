@@ -981,6 +981,27 @@ export const reservasService = {
       throw error;
     }
   },
+
+  // Obter dias reservados para uma casa
+  getDiasReservados: async (casaId: number): Promise<string[]> => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error("Usuário não está autenticado");
+      }
+
+      console.log(`Obtendo dias reservados para casa ID: ${casaId}`);
+
+      const response = USE_PROXY
+        ? await api.get(`/api/proxy?path=api/reservas/dias-reservados/${casaId}`)
+        : await api.get(`/api/reservas/dias-reservados/${casaId}`);
+
+      console.log(`Resposta de dias reservados recebida com status: ${response.status}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Erro ao obter dias reservados para casa ${casaId}:`, error);
+      throw error;
+    }
+  },
 };
 
 // Serviço para gerenciar hóspedes

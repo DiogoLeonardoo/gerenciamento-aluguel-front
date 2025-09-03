@@ -342,12 +342,6 @@ export default function CasasListPage() {
             <p className="text-gray-500 mb-6 max-w-sm mx-auto">
               Você ainda não possui imóveis cadastrados. Comece adicionando seu primeiro imóvel para começar a receber reservas.
             </p>
-            <Link href="/proprietario/casas/adicionar">
-              <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-300">
-                <Plus className="h-4 w-4 mr-2" />
-                <span className="font-medium">Adicionar Primeiro Imóvel</span>
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       ) : authorized && casasFiltradas.length === 0 && casas.length > 0 ? (

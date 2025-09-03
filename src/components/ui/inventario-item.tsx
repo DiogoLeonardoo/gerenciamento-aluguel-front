@@ -75,7 +75,7 @@ export function InventarioItemComponent({
           <Package className="h-5 w-5" />
           <h4 className="font-medium">{item.item || `Item ${index + 1}`}</h4>
           {item.quantidade > 1 && (
-            <span className="bg-white bg-opacity-20 text-white px-2 py-0.5 rounded-full text-xs">
+            <span className="bg-black bg-opacity-20 text-white px-2 py-0.5 rounded-full text-xs">
               Qtd: {item.quantidade}
             </span>
           )}
