@@ -33,7 +33,7 @@ export const handleApiError = (error: any, defaultMessage = "Ocorreu um erro"): 
 };
 
 // API URL as a variable that can be changed later
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://inhouse-back-production.up.railway.app";
 // Use a proxy for API requests to avoid CORS issues
 const USE_PROXY = true;
 
