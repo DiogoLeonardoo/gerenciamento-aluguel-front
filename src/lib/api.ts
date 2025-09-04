@@ -926,16 +926,13 @@ export const reservasService = {
         dataFim: params.dataFim
       } : {};
 
-      console.log(`Obtendo dados de faturamento${params?.casaId ? ` para casa ID: ${params.casaId}` : ''}`);
 
       const response = USE_PROXY
         ? await api.get(`/api/proxy?path=api/reservas/faturamento`, { params: requestParams })
         : await api.get(`/api/reservas/faturamento`, { params: requestParams });
 
-      console.log(`Resposta de faturamento recebida com status: ${response.status}`);
       return response.data;
     } catch (error) {
-      console.error("Erro ao obter dados de faturamento:", error);
       throw error;
     }
   },
@@ -947,16 +944,13 @@ export const reservasService = {
         throw new Error("Usuário não está autenticado");
       }
 
-      console.log("Obtendo check-ins de hoje");
 
       const response = USE_PROXY
         ? await api.get(`/api/proxy?path=api/reservas/checkin-hoje`)
         : await api.get(`/api/reservas/checkin-hoje`);
 
-      console.log(`Resposta de check-ins recebida com status: ${response.status}`);
       return response.data;
     } catch (error) {
-      console.error("Erro ao obter check-ins de hoje:", error);
       throw error;
     }
   },
@@ -968,16 +962,31 @@ export const reservasService = {
         throw new Error("Usuário não está autenticado");
       }
 
-      console.log("Obtendo check-outs de hoje");
 
       const response = USE_PROXY
         ? await api.get(`/api/proxy?path=api/reservas/checkout-hoje`)
         : await api.get(`/api/reservas/checkout-hoje`);
 
-      console.log(`Resposta de check-outs recebida com status: ${response.status}`);
       return response.data;
     } catch (error) {
-      console.error("Erro ao obter check-outs de hoje:", error);
+      throw error;
+    }
+  },
+
+  // Obter dias reservados para uma casa
+  getDiasReservados: async (casaId: number): Promise<string[]> => {
+    try {
+      if (!authService.isAuthenticated()) {
+        throw new Error("Usuário não está autenticado");
+      }
+
+
+      const response = USE_PROXY
+        ? await api.get(`/api/proxy?path=api/reservas/dias-reservados/${casaId}`)
+        : await api.get(`/api/reservas/dias-reservados/${casaId}`);
+
+      return response.data;
+    } catch (error) {
       throw error;
     }
   },

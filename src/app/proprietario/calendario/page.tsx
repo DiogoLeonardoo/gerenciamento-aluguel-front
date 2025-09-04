@@ -12,7 +12,7 @@ import { ptBR } from "date-fns/locale";
 
 export default function CalendarioPage() {
   const [casas, setCasas] = useState<Casa[]>([]);
-  const [reservas, setReservas] = useState<Reserva[]>([]);
+  const [diasReservados, setDiasReservados] = useState<string[]>([]);
   const [casaSelecionada, setCasaSelecionada] = useState<number | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
@@ -62,119 +62,79 @@ export default function CalendarioPage() {
   // Carregar reservas quando casa for selecionada
   useEffect(() => {
     if (!casaSelecionada || !authorized) {
-      console.log('useEffect reservas: casaSelecionada ou authorized falsy', { casaSelecionada, authorized });
+      console.log('useEffect diasReservados: casaSelecionada ou authorized falsy', { casaSelecionada, authorized });
       return;
     }
 
-    console.log('useEffect reservas: Carregando reservas para casa:', casaSelecionada);
-    console.log('useEffect reservas: Limpando reservas antigas antes de carregar novas');
+    console.log('useEffect diasReservados: Carregando dias reservados para casa:', casaSelecionada);
+    console.log('useEffect diasReservados: Limpando dias reservados antigas antes de carregar novas');
 
-    // Limpar reservas imediatamente quando a casa muda
-    setReservas([]);
+    // Limpar dias reservados imediatamente quando a casa muda
+    setDiasReservados([]);
 
-    const fetchReservas = async () => {
+    const fetchDiasReservados = async () => {
       setIsLoading(true);
       try {
-        console.log('Fazendo chamada API para reservas da casa:', casaSelecionada);
-        console.log('Parâmetros sendo enviados:', { casaId: casaSelecionada });
+        console.log('Fazendo chamada API para dias reservados da casa:', casaSelecionada);
 
-        const data = await reservasService.getReservas({
-          casaId: casaSelecionada
-        });
+        const data = await reservasService.getDiasReservados(casaSelecionada);
 
         console.log('Dados recebidos da API:', data);
         console.log('Tipo dos dados:', typeof data);
         console.log('É array?', Array.isArray(data));
 
         if (data && Array.isArray(data)) {
-          console.log('Reservas válidas recebidas:', data.length);
-          data.forEach((reserva, index) => {
-            console.log(`Reserva ${index + 1}:`, {
-              id: reserva.id,
-              casaId: reserva.casaId,
-              dataCheckin: reserva.dataCheckin,
-              dataCheckout: reserva.dataCheckout
-            });
+          console.log('Dias reservados válidos recebidos:', data.length);
+          data.forEach((dia, index) => {
+            console.log(`Dia reservado ${index + 1}:`, dia);
           });
-          setReservas(data);
-          console.log('Estado reservas atualizado com:', data.length, 'reservas');
+          setDiasReservados(data);
+          console.log('Estado diasReservados atualizado com:', data.length, 'dias');
         } else {
-          console.log('Nenhuma reserva encontrada ou dados inválidos');
-          setReservas([]);
+          console.log('Nenhum dia reservado encontrado ou dados inválidos');
+          setDiasReservados([]);
         }
       } catch (error) {
-        console.error("Erro ao carregar reservas:", error);
-        console.log('Limpando reservas devido ao erro');
-        setReservas([]);
+        console.error("Erro ao carregar dias reservados:", error);
+        console.log('Limpando dias reservados devido ao erro');
+        setDiasReservados([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchReservas();
+    fetchDiasReservados();
   }, [casaSelecionada, authorized]);
 
-  // Limpar reservas quando a casa muda (segurança adicional)
+  // Limpar dias reservados quando a casa muda (segurança adicional)
   useEffect(() => {
-    console.log('Casa mudou para:', casaSelecionada, '- limpando reservas antigas');
-    setReservas([]);
+    console.log('Casa mudou para:', casaSelecionada, '- limpando dias reservados antigas');
+    setDiasReservados([]);
   }, [casaSelecionada]);
 
-  // Monitorar mudanças no estado das reservas
+  // Monitorar mudanças no estado dos dias reservados
   useEffect(() => {
-    console.log('Estado reservas mudou:', reservas.length, 'reservas no estado');
-    reservas.forEach((reserva, index) => {
-      console.log(`Estado reserva ${index + 1}:`, {
-        id: reserva.id,
-        casaId: reserva.casaId,
-        dataCheckin: reserva.dataCheckin,
-        dataCheckout: reserva.dataCheckout
-      });
+    console.log('Estado diasReservados mudou:', diasReservados.length, 'dias no estado');
+    diasReservados.forEach((dia, index) => {
+      console.log(`Dia reservado ${index + 1}:`, dia);
     });
-  }, [reservas]);
+  }, [diasReservados]);
 
   // Verificar se um dia tem reserva
   const getReservasDoDia = (date: Date) => {
-    console.log('Verificando reservas para data:', format(date, 'yyyy-MM-dd'));
-    console.log('Total de reservas no estado:', reservas.length);
+    console.log('Verificando dias reservados para data:', format(date, 'yyyy-MM-dd'));
+    console.log('Total de dias reservados no estado:', diasReservados.length);
 
-    const reservasDoDia = reservas.filter(reserva => {
-      console.log('Verificando reserva:', reserva.id, 'casaId:', reserva.casaId, 'casaSelecionada:', casaSelecionada);
+    const diaFormatado = format(date, 'yyyy-MM-dd');
+    const isReservado = diasReservados.includes(diaFormatado);
 
-      // Verificar se a reserva pertence à casa selecionada
-      if (reserva.casaId !== casaSelecionada) {
-        console.log('Reserva', reserva.id, 'não pertence à casa selecionada, pulando...');
-        return false;
-      }
-
-      const checkin = parseISO(reserva.dataCheckin);
-      const checkout = parseISO(reserva.dataCheckout);
-
-      console.log('Reserva', reserva.id, '- Checkin:', format(checkin, 'yyyy-MM-dd'), 'Checkout:', format(checkout, 'yyyy-MM-dd'));
-
-      // Verificar se a data está dentro do período da reserva (inclusive)
-      const isInRange = date >= checkin && date <= checkout;
-
-      if (isInRange) {
-        console.log('✅ Reserva encontrada para data:', format(date, 'yyyy-MM-dd'), 'reserva:', reserva.id);
-      }
-
-      return isInRange;
-    });
-
-    console.log('Reservas encontradas para', format(date, 'yyyy-MM-dd'), ':', reservasDoDia.length);
-    return reservasDoDia;
+    console.log('Dia está reservado?', isReservado);
+    return isReservado ? [diaFormatado] : [];
   };
 
-  // Verificar se um dia é checkin ou checkout
-  const getTipoDia = (date: Date, reservasDoDia: Reserva[]) => {
-    for (const reserva of reservasDoDia) {
-      const checkin = parseISO(reserva.dataCheckin);
-      const checkout = parseISO(reserva.dataCheckout);
-
-      if (isSameDay(date, checkin)) return 'checkin';
-      if (isSameDay(date, checkout)) return 'checkout';
-    }
+  // Verificar se um dia é checkin ou checkout (simplificado, já que não temos os dados completos)
+  const getTipoDia = (date: Date, diasReservadosDoDia: string[]) => {
+    // Como não temos informações de checkin/checkout, marcamos todos como ocupados
     return 'ocupado';
   };
 
@@ -198,7 +158,7 @@ export default function CalendarioPage() {
 
   console.log('Renderizando calendário:', {
     casaSelecionada,
-    totalReservas: reservas.length,
+    totalDiasReservados: diasReservados.length,
     isLoading,
     currentMonth: format(currentMonth, 'yyyy-MM')
   });
@@ -237,10 +197,10 @@ export default function CalendarioPage() {
                 console.log('=== CASA MUDANDO ===');
                 console.log('Casa anterior:', casaSelecionada);
                 console.log('Nova casa:', newValue);
-                console.log('Reservas atuais:', reservas.length);
+                console.log('Dias reservados atuais:', diasReservados.length);
 
                 // Forçar limpeza imediata do estado
-                setReservas([]);
+                setDiasReservados([]);
                 setCasaSelecionada(newValue);
 
                 console.log('Estado limpo, nova casa selecionada');
@@ -290,7 +250,7 @@ export default function CalendarioPage() {
           {isLoading ? (
             <div className="flex items-center justify-center py-16">
               <div className="animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-r-transparent"></div>
-              <p className="ml-3 text-gray-600">Carregando reservas...</p>
+              <p className="ml-3 text-gray-600">Carregando dias reservados...</p>
             </div>
           ) : (
             <>
@@ -306,12 +266,12 @@ export default function CalendarioPage() {
               {/* Dias do mês */}
               <div className="grid grid-cols-7 gap-1">
                 {monthDays.map((date, index) => {
-                  const reservasDoDia = getReservasDoDia(date);
-                  const temReserva = reservasDoDia.length > 0;
-                  const tipoDia = temReserva ? getTipoDia(date, reservasDoDia) : null;
+                  const diasReservadosDoDia = getReservasDoDia(date);
+                  const temReserva = diasReservadosDoDia.length > 0;
+                  const tipoDia = temReserva ? getTipoDia(date, diasReservadosDoDia) : null;
                   const isCurrentMonth = isSameMonth(date, currentMonth);
 
-                  console.log(`Dia ${format(date, 'yyyy-MM-dd')}: temReserva=${temReserva}, reservas=${reservasDoDia.length}`);
+                  console.log(`Dia ${format(date, 'yyyy-MM-dd')}: temReserva=${temReserva}, diasReservados=${diasReservadosDoDia.length}`);
 
                   return (
                     <div
@@ -321,11 +281,7 @@ export default function CalendarioPage() {
                         ${!isCurrentMonth
                           ? 'bg-gray-50 text-gray-400 border-gray-200'
                           : temReserva
-                            ? tipoDia === 'checkin'
-                              ? 'bg-green-100 border-green-300 text-green-800'
-                              : tipoDia === 'checkout'
-                                ? 'bg-red-100 border-red-300 text-red-800'
-                                : 'bg-blue-50 border-blue-300 text-blue-800'
+                            ? 'bg-blue-50 border-blue-300 text-blue-800'
                             : 'bg-white border-gray-200 hover:bg-gray-50'
                         }
                       `}
@@ -336,30 +292,11 @@ export default function CalendarioPage() {
 
                       {temReserva && (
                         <div className="space-y-1">
-                          {reservasDoDia.slice(0, 2).map((reserva, idx) => (
-                            <div
-                              key={reserva.id}
-                              className={`
-                                text-xs p-1 rounded truncate
-                                ${tipoDia === 'checkin'
-                                  ? 'bg-green-200 text-green-800'
-                                  : tipoDia === 'checkout'
-                                    ? 'bg-red-200 text-red-800'
-                                    : 'bg-blue-200 text-blue-800'
-                                }
-                              `}
-                              title={`R$ ${reserva.valorTotal?.toFixed(2) || reserva.valorPago.toFixed(2)}`}
-                            >
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs">Reservado</span>
-                              </div>
+                          <div className="text-xs p-1 rounded truncate bg-blue-200 text-blue-800">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs">Reservado</span>
                             </div>
-                          ))}
-                          {reservasDoDia.length > 2 && (
-                            <div className="text-xs text-gray-500">
-                              +{reservasDoDia.length - 2} mais
-                            </div>
-                          )}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -372,16 +309,8 @@ export default function CalendarioPage() {
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Legenda:</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
-                    <span className="text-sm text-gray-600">Check-in</span>
-                  </div>
-                  <div className="flex items-center gap-2">
                     <div className="w-4 h-4 bg-blue-50 border border-blue-300 rounded"></div>
-                    <span className="text-sm text-gray-600">Ocupado</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
-                    <span className="text-sm text-gray-600">Check-out</span>
+                    <span className="text-sm text-gray-600">Reservado</span>
                   </div>
                 </div>
               </div>
